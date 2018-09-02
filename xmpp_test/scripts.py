@@ -16,6 +16,7 @@ import csv
 import json
 import sys
 from .socket import test_client
+from .socket import test_server
 
 from tabulate import tabulate
 
@@ -36,13 +37,18 @@ def test():
                         help="Output format to use (default: %(default)s).")
 
     subparsers = parser.add_subparsers(help='Commands', dest='command')
-    test_socket = subparsers.add_parser('test-socket', help='Test socket connections')
+    test_socket = subparsers.add_parser(
+        'socket', help='Test a domain by doing a simple socket connection to each DNS entry.')
     test_socket.add_argument('domain', help="The domain to test.")
 
     args = parser.parse_args()
 
-    if args.command == 'test-socket':
-        results = test_client(args.domain, ipv4=args.ipv4, ipv6=args.ipv6)
+    if args.command == 'socket':
+        if args.typ == 'client':
+            results = test_client(args.domain, ipv4=args.ipv4, ipv6=args.ipv6)
+        elif args.typ == 'server':
+            results = test_server(args.domain, ipv4=args.ipv4, ipv6=args.ipv6)
+
         fieldnames = ['ip', 'port', 'status']
         if args.format == 'table':
             results = [(r[0], r[1], 'ok' if r[2] else 'failed') for r in results]
