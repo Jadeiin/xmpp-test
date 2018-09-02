@@ -23,7 +23,7 @@ from .constants import SRV_XMPP_SERVER
 def xmpp_records(domain, ipv4=True, ipv6=True, typ=SRV_XMPPS_CLIENT):
     try:
         srv_records = resolver.query('_%s._tcp.%s' % (typ, domain), 'SRV')
-    except resolver.NoAnswer:
+    except (resolver.NXDOMAIN, resolver.NoAnswer):
         return
 
     for srv_record in srv_records:
