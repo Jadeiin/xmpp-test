@@ -11,7 +11,7 @@
 # You should have received a copy of the GNU General Public License along with xmpp-test.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-from .constants import SRV_XMPPS_CLIENT
-
-def xmpp_records(ipv4=True, ipv6=True, typ=SRV_XMPPS_CLIENT):
-    pass
+SRV_XMPP_CLIENT = 'xmpp-client'
+SRV_XMPP_SERVER = 'xmpp-server'
+SRV_XMPPS_CLIENT = 'xmpps-client'
+SRV_XMPPS_SERVER = 'xmpps-server'
