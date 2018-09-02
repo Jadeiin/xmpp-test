@@ -17,8 +17,11 @@ from slixmpp.stanza import StreamFeatures
 from slixmpp.xmlstream.handler import CoroutineCallback
 from slixmpp.xmlstream.matcher import MatchXPath
 
+from .constants import SRV_XMPPS_CLIENT
+from .dns import xmpp_client_records
 
-class TestConnectClient(BaseXMPP):
+
+class BasicConnectClient(BaseXMPP):
     def __init__(self, host, address, port, *args, **kwargs):
         self._test_host = host
         self._test_address = address
@@ -61,3 +64,20 @@ class TestConnectClient(BaseXMPP):
     def handle_stream_end(self, *args, **kwargs):
         print('session end:', args, kwargs)
         self.abort()
+
+
+def test_client_basic(domain, ipv4=True, ipv6=True):
+    import logging
+    logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
+
+    for typ, srv, host, addr, port in xmpp_client_records(domain, ipv4=ipv4, ipv6=ipv6):
+
+        kwargs = {}
+        if typ == SRV_XMPPS_CLIENT:
+            kwargs['use_ssl'] = True
+
+        client = BasicConnectClient(domain, addr, port)
+        client.connect(str(addr), port, **kwargs)
+        client.process(forever=False)
+
+        yield typ, addr, port

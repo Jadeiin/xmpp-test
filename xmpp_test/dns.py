@@ -22,7 +22,8 @@ from .constants import SRV_XMPP_SERVER
 
 def xmpp_records(domain, ipv4=True, ipv6=True, typ=SRV_XMPPS_CLIENT):
     try:
-        srv_records = resolver.query('_%s._tcp.%s' % (typ, domain), 'SRV')
+        srv_query = '_%s._tcp.%s' % (typ, domain)
+        srv_records = resolver.query(srv_query, 'SRV')
     except (resolver.NXDOMAIN, resolver.NoAnswer):
         return
 
@@ -32,27 +33,27 @@ def xmpp_records(domain, ipv4=True, ipv6=True, typ=SRV_XMPPS_CLIENT):
         if ipv4 is True:
             try:
                 for record in resolver.query(host, 'A'):
-                    yield (host, ipaddress.ip_address(record.address), srv_record.port)
+                    yield (srv_query, host, ipaddress.ip_address(record.address), srv_record.port)
             except (resolver.NXDOMAIN, resolver.NoAnswer):
                 pass
 
         if ipv6 is True:
             try:
                 for record in resolver.query(host, 'AAAA'):
-                    yield (host, ipaddress.ip_address(record.address), srv_record.port)
+                    yield (srv_query, host, ipaddress.ip_address(record.address), srv_record.port)
             except (resolver.NXDOMAIN, resolver.NoAnswer):
                 pass
 
 
 def xmpp_client_records(domain, ipv4=True, ipv6=True):
-    for host, addr, port in xmpp_records(domain, ipv4=ipv4, ipv6=ipv6, typ=SRV_XMPP_CLIENT):
-        yield (SRV_XMPP_CLIENT, host, addr, port)
-    for host, addr, port in xmpp_records(domain, ipv4=ipv4, ipv6=ipv6, typ=SRV_XMPPS_CLIENT):
-        yield (SRV_XMPPS_CLIENT, host, addr, port)
+    for srv, host, addr, port in xmpp_records(domain, ipv4=ipv4, ipv6=ipv6, typ=SRV_XMPP_CLIENT):
+        yield (SRV_XMPP_CLIENT, srv, host, addr, port)
+    for srv, host, addr, port in xmpp_records(domain, ipv4=ipv4, ipv6=ipv6, typ=SRV_XMPPS_CLIENT):
+        yield (SRV_XMPPS_CLIENT, srv, host, addr, port)
 
 
 def xmpp_server_records(domain, ipv4=True, ipv6=True):
-    for host, addr, port in xmpp_records(domain, ipv4=ipv4, ipv6=ipv6, typ=SRV_XMPP_SERVER):
-        yield (SRV_XMPP_SERVER, host, addr, port)
-    for host, addr, port in xmpp_records(domain, ipv4=ipv4, ipv6=ipv6, typ=SRV_XMPPS_SERVER):
-        yield (SRV_XMPPS_SERVER, host, addr, port)
+    for srv, host, addr, port in xmpp_records(domain, ipv4=ipv4, ipv6=ipv6, typ=SRV_XMPP_SERVER):
+        yield (SRV_XMPP_SERVER, srv, host, addr, port)
+    for srv, host, addr, port in xmpp_records(domain, ipv4=ipv4, ipv6=ipv6, typ=SRV_XMPPS_SERVER):
+        yield (SRV_XMPPS_SERVER, srv, host, addr, port)

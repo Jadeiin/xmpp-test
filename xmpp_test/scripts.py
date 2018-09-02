@@ -15,16 +15,19 @@ import argparse
 import csv
 import json
 import sys
-from .socket import test_client
-from .socket import test_server
 
 from tabulate import tabulate
+
+from .clients import test_client_basic
+from .socket import test_client
+from .socket import test_server
 
 
 def test():
     parser = argparse.ArgumentParser()
     typ_group = parser.add_mutually_exclusive_group()
-    typ_group.add_argument('-c', '--client', dest='typ', action='store_const', const='client',
+    typ_group.add_argument('-c', '--client', dest='typ', default='client',
+                           action='store_const', const='client',
                            help="Test XMPP client connections (the default).")
     typ_group.add_argument('-s', '--server', dest='typ', action='store_const', const='server',
                            help="Test XMPP server connections.")
@@ -41,6 +44,10 @@ def test():
         'socket', help='Test a domain by doing a simple socket connection to each DNS entry.')
     test_socket.add_argument('domain', help="The domain to test.")
 
+    test_socket = subparsers.add_parser(
+        'basic', help='Basic XMPP connection test.')
+    test_socket.add_argument('domain', help="The domain to test.")
+
     args = parser.parse_args()
 
     if args.command == 'socket':
@@ -49,15 +56,25 @@ def test():
         elif args.typ == 'server':
             results = test_server(args.domain, ipv4=args.ipv4, ipv6=args.ipv6)
 
-        fieldnames = ['ip', 'port', 'status']
+        fieldnames = ['SRV', 'A/AAAA', 'IP', 'port', 'status']
         if args.format == 'table':
-            results = [(r[0], r[1], 'ok' if r[2] else 'failed') for r in results]
+            results = [(r[1], r[2], r[3], r[4], 'ok' if r[5] else 'failed') for r in results]
             print(tabulate(results, headers=fieldnames))
         elif args.format == 'csv':
             writer = csv.writer(sys.stdout, delimiter=',')
             writer.writerow(fieldnames)
             for r in results:
-                writer.writerow((r[0], r[1], 'ok' if r[2] else 'failed'))
+                writer.writerow((r[1], r[2], r[3], r[4], 'ok' if r[5] else 'failed'))
         else:
-            data = [{'ip': str(r[0]), 'port': r[1], 'status': r[2]} for r in results]
+            data = [{
+                'srv': r[1],
+                'host': r[2],
+                'ip': str(r[3]),
+                'port': r[4],
+                'status': r[5]
+            } for r in results]
             print(json.dumps(data))
+
+    elif args.command == 'basic':
+        results = test_client_basic(args.domain, ipv4=args.ipv4, ipv6=args.ipv6)
+        print(list(results))
