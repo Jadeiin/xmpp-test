@@ -13,6 +13,8 @@
 
 import ipaddress
 import socket
+from .dns import xmpp_client_records
+from .dns import xmpp_server_records
 
 
 def test_socket(address, port):
@@ -31,3 +33,17 @@ def test_socket(address, port):
         return False
 
     return True
+
+
+def test_client(domain, ipv4=True, ipv6=True):
+    """Test all XMPP client records."""
+
+    for _typ, _host, addr, port in xmpp_client_records(domain, ipv4=ipv4, ipv6=ipv6):
+        yield (addr, port, test_socket(addr, port))
+
+
+def test_server(domain, ipv4=True, ipv6=True):
+    """Test all XMPP server records."""
+
+    for _typ, _host, addr, port in xmpp_server_records(domain, ipv4=ipv4, ipv6=ipv6):
+        yield (addr, port, test_socket(addr, port))
