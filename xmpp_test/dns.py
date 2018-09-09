@@ -11,8 +11,12 @@
 # You should have received a copy of the GNU General Public License along with xmpp-test.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-import ipaddress
-from dns import resolver
+from ipaddress import IPv4Address
+from ipaddress import IPv6Address
+from typing import List
+from typing import Union
+
+import aiodns
 
 from .constants import SRV_XMPPS_CLIENT
 from .constants import SRV_XMPPS_SERVER
@@ -20,40 +24,84 @@ from .constants import SRV_XMPP_CLIENT
 from .constants import SRV_XMPP_SERVER
 
 
-def xmpp_records(domain, ipv4=True, ipv6=True, typ=SRV_XMPPS_CLIENT):
-    try:
-        srv_query = '_%s._tcp.%s' % (typ, domain)
-        srv_records = resolver.query(srv_query, 'SRV')
-    except (resolver.NXDOMAIN, resolver.NoAnswer):
-        return
+class SRVRecord:
+    service: str
+    proto: str
+    domain: str
+    ttl: int
+    priority: int
+    weight: int
+    port: int
+    target: str
 
-    for srv_record in srv_records:
-        host = srv_record.target.split(1)[0].to_text()
+    def __init__(self, service: str, proto: str, domain: str, ttl: int, priority: int, weight: int, port: int,
+                 target: str) -> None:
+        self.service = service
+        self.proto = proto
+        self.domain = domain
+        self.ttl = ttl
+        self.priority = priority
+        self.weight = weight
+        self.port = port
+        self.target = target
 
-        if ipv4 is True:
-            try:
-                for record in resolver.query(host, 'A'):
-                    yield (srv_query, host, ipaddress.ip_address(record.address), srv_record.port)
-            except (resolver.NXDOMAIN, resolver.NoAnswer):
-                pass
+    def __str__(self) -> str:
+        return '_%s._%s.%s -> %s:%s' % (self.service, self.proto, self.domain, self.target, self.port)
 
-        if ipv6 is True:
-            try:
-                for record in resolver.query(host, 'AAAA'):
-                    yield (srv_query, host, ipaddress.ip_address(record.address), srv_record.port)
-            except (resolver.NXDOMAIN, resolver.NoAnswer):
-                pass
+    def __repr__(self) -> str:
+        return '<SRVRecord: %s>' % self
+
+    async def resolve(self) -> List[Union[IPv4Address, IPv6Address]]:
+        resolver = aiodns.DNSResolver()
+        has_records = False
+
+        try:
+            ip4_records = await resolver.query(self.target, 'A')
+            for result in ip4_records:
+                print(dir(result))
+                yield result
+            has_records = True
+        except aiodns.error.DNSError:
+            pass
+
+        try:
+            ip6_records = await resolver.query(self.target, 'AAAA')
+            for result in ip6_records:
+                yield result
+            has_records = True
+        except aiodns.error.DNSError:
+            pass
+
+        if has_records is False:
+            raise RuntimeError('No Records for this SRV record!')
 
 
-def xmpp_client_records(domain, ipv4=True, ipv6=True):
-    for srv, host, addr, port in xmpp_records(domain, ipv4=ipv4, ipv6=ipv6, typ=SRV_XMPP_CLIENT):
-        yield (SRV_XMPP_CLIENT, srv, host, addr, port)
-    for srv, host, addr, port in xmpp_records(domain, ipv4=ipv4, ipv6=ipv6, typ=SRV_XMPPS_CLIENT):
-        yield (SRV_XMPPS_CLIENT, srv, host, addr, port)
+async def srv_records(service, domain, proto='tcp'):
+    resolver = aiodns.DNSResolver()
+    query = '_%s._%s.%s' % (service, proto, domain)
+    results = await resolver.query(query, 'SRV')
+    return [SRVRecord(
+        service=service, proto=proto, domain=domain,
+        ttl=r.ttl, priority=r.priority, weight=r.weight,
+        port=r.port, target=r.host
+    ) for r in results]
 
 
-def xmpp_server_records(domain, ipv4=True, ipv6=True):
-    for srv, host, addr, port in xmpp_records(domain, ipv4=ipv4, ipv6=ipv6, typ=SRV_XMPP_SERVER):
-        yield (SRV_XMPP_SERVER, srv, host, addr, port)
-    for srv, host, addr, port in xmpp_records(domain, ipv4=ipv4, ipv6=ipv6, typ=SRV_XMPPS_SERVER):
-        yield (SRV_XMPPS_SERVER, srv, host, addr, port)
+async def xmpp_client_records(domain):
+    for srv in await srv_records(SRV_XMPP_CLIENT, domain):
+        yield srv
+    for srv in await srv_records(SRV_XMPPS_CLIENT, domain):
+        yield srv
+
+
+async def xmpp_server_records(domain):
+    for srv in await srv_records(SRV_XMPP_SERVER, domain):
+        yield srv
+    for srv in await srv_records(SRV_XMPPS_SERVER, domain):
+        yield srv
+
+
+async def test2(domain, service=SRV_XMPPS_CLIENT):
+    for srv in await srv_records(service, domain):
+        async for result in srv.resolve():
+            print('result: %s' % (result, ))
