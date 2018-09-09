@@ -77,4 +77,5 @@ def test():
 
     elif args.command == 'basic':
         results = test_client_basic(args.domain, ipv4=args.ipv4, ipv6=args.ipv6)
+        fieldnames = ['SRV', 'A/AAAA', 'IP', 'port', 'status']
         print(list(results))
