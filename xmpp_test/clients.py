@@ -11,6 +11,8 @@
 # You should have received a copy of the GNU General Public License along with xmpp-test.  If not, see
 # <http://www.gnu.org/licenses/>.
 
+import asyncio
+
 from slixmpp.basexmpp import BaseXMPP
 from slixmpp.clientxmpp import ClientXMPP
 from slixmpp.stanza import StreamFeatures
@@ -21,11 +23,12 @@ from .constants import SRV_XMPPS_CLIENT
 from .dns import xmpp_client_records
 
 
-class BasicConnectClient(BaseXMPP):
+class ConnectClientBase(BaseXMPP):
     def __init__(self, host, address, port, *args, **kwargs):
         self._test_host = host
         self._test_address = address
         self._test_port = port
+        self._test_success = False
 
         super().__init__(*args, **kwargs)
         self.stream_header = "<stream:stream to='%s' %s %s %s %s>" % (
@@ -50,6 +53,7 @@ class BasicConnectClient(BaseXMPP):
 
         self.add_event_handler('stream_negotiated', self.handle_stream_negotiated)
         self.add_event_handler('session_end', self.handle_stream_end)
+        self.add_event_handler('connection_failed', self.handle_connection_failed)
 
     _handle_stream_features = ClientXMPP._handle_stream_features
     register_feature = ClientXMPP.register_feature
@@ -59,11 +63,23 @@ class BasicConnectClient(BaseXMPP):
 
     def handle_stream_negotiated(self, *args, **kwargs):
         print('stream negotiated:', args, kwargs)
+        self._test_success = True
         self.abort()
 
     def handle_stream_end(self, *args, **kwargs):
         print('session end:', args, kwargs)
         self.abort()
+
+    def handle_connection_failed(self, exception):
+        print('connection failed', exception)
+        self.abort()
+        if not self.disconnected.cancelled():
+            self.disconnected.set_result(True)
+            self.disconnected = asyncio.Future()
+
+
+class BasicConnectClient(ConnectClientBase):
+    pass
 
 
 def test_client_basic(domain, ipv4=True, ipv6=True):
@@ -78,6 +94,12 @@ def test_client_basic(domain, ipv4=True, ipv6=True):
 
         client = BasicConnectClient(domain, addr, port)
         client.connect(str(addr), port, **kwargs)
-        client.process(forever=False)
+        client.process(forever=False, timeout=10)
 
-        yield typ, addr, port
+        yield typ, addr, port, client._test_success
+
+    client = BasicConnectClient(domain, addr, port + 1)
+    client.connect(str(addr), port + 1, **kwargs)
+    client.process(forever=False, timeout=10)
+
+    yield typ, addr, port + 1, client._test_success
