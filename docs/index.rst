@@ -10,6 +10,7 @@ Welcome to xmpp-test's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   api/dns
 
 
 Indices and tables

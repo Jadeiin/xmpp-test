@@ -26,6 +26,28 @@ from .tags import tag
 
 
 class SRVRecord:
+    """A class representing a generic SRV record.
+
+    Parameters
+    ----------
+
+    service : str
+        Symbolic name of the desired service (e.g. ``"xmpp-client"``).
+    proto : str
+        The transport protocol of the desired service (e.g. ``"tcp"``).
+    domain : str
+        The domain name for which this record is valid (e.g. "``example.com``").
+    ttl : int
+        TTL for the DNS record.
+    priority : int
+        Priority for the DNS record.
+    weight : int
+        Weight for the DNS record.
+    port : int
+        TCP  or UDP port on which this service can be found.
+    target : str
+        The target domain for this service (e.g. ``"xmpp.example.com"``).
+    """
     service: str
     proto: str
     domain: str
@@ -48,6 +70,7 @@ class SRVRecord:
 
     @property
     def source(self) -> str:
+        """Returns the DNS name of this record, e.g. ``"_xmpp-client._tcp.example.com"``."""
         return '_%s._%s.%s' % (self.service, self.proto, self.domain)
 
     def __str__(self) -> str:
@@ -56,7 +79,9 @@ class SRVRecord:
     def __repr__(self) -> str:
         return '<SRVRecord: %s>' % self
 
-    async def resolve(self) -> AsyncGenerator[List[Union[IPv4Address, IPv6Address]], None]:
+    async def resolve(self) -> AsyncGenerator['XMPPTarget', None]:
+        """Resolve this SRV record to IPv4/IPv6 records in an asynchronous generator."""
+
         resolver = aiodns.DNSResolver()
         has_ip4 = False
         has_ip6 = False
@@ -87,6 +112,9 @@ class SRVRecord:
 
 class XMPPTarget:
     """A class representing possible connection to an XMPP server.
+
+    A typical XMPP test will run for each available ``XMPPTARGET``, testing if any SRV Record or IP address is
+    misconfigured.
 
     Parameters
     ----------
