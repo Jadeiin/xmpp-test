@@ -11,39 +11,64 @@
 # You should have received a copy of the GNU General Public License along with xmpp-test.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-import ipaddress
+import asyncio
 import socket
-#from .dns import xmpp_client_records
-#from .dns import xmpp_server_records
+from typing import List
+from typing import Tuple
+
+from .constants import Check
+from .dns import gen_dns_records
+from .tags import tag
+from .dns import XMPPTarget
 
 
-def test_socket(address, port):
-    """Test a host/port pair by creating a basic socket connection.
+class SocketTestResult:
+    target: XMPPTarget
+    successful: bool
 
-    This does no more then simply open a socket to see if that succeeds. This will happily return ``True`` no
-    matter the server listening on that port or if TLS connection would be required to connect to it or not.
-    """
-    if isinstance(address, (ipaddress.IPv4Address, ipaddress.IPv6Address)):
-        address = str(address)
+    def __init__(self, target: XMPPTarget, successful: bool) -> None:
+        self.target = target
+        self.successful = successful
 
+    def as_dict(self) -> dict:
+        d = self.target.as_dict()
+        d['status'] = self.successful
+        return d
+
+    def tabulate(self) -> dict:
+        d = self.as_dict()
+        d['status'] = 'working' if d['status'] else 'failed'
+        return d
+
+
+async def test_socket(target: XMPPTarget) -> Tuple[XMPPTarget, bool]:
+    ip = str(target.ip)
+    port = target.srv.port
+
+    s = socket.socket()
+    s.settimeout(2)
+
+    loop = asyncio.get_event_loop()
     try:
-        with socket.create_connection((address, port), timeout=2):
-            pass
+        await loop.sock_connect(s, (ip, port))
+        return target, True
     except Exception as e:
-        return False
-
-    return True
+        return target, False
 
 
-def test_client(domain, ipv4=True, ipv6=True):
-    """Test all XMPP client records."""
+async def run_socket_test(domain: str, typ: Check = Check.CLIENT,
+                          ipv4: bool = True, ipv6: bool = True, xmpps: bool = True
+                          ) -> List[SocketTestResult]:
 
-    for typ, srv, host, addr, port in xmpp_client_records(domain, ipv4=ipv4, ipv6=ipv6):
-        yield (typ, srv, host, addr, port, test_socket(addr, port))
+    futures = []
+    async for target in gen_dns_records(domain, typ, ipv4, ipv6, xmpps):
+        futures.append(asyncio.ensure_future(test_socket(target)))
+    return [SocketTestResult(t, s) for t, s in await asyncio.gather(*futures)]
 
 
-def test_server(domain, ipv4=True, ipv6=True):
-    """Test all XMPP server records."""
-
-    for typ, srv, host, addr, port in xmpp_server_records(domain, ipv4=ipv4, ipv6=ipv6):
-        yield (typ, srv, host, addr, port, test_socket(addr, port))
+def socket_test(domain: str, typ: Check = Check.CLIENT,
+                ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
+    loop = asyncio.get_event_loop()
+    data = loop.run_until_complete(run_socket_test(domain, typ, ipv4, ipv6, xmpps))
+    tags = tag.pop_all()
+    return data, tags
