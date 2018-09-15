@@ -14,8 +14,6 @@
 import asyncio
 
 from .constants import Check
-from .constants import SRV_TYPES
-from .dns import srv_records
 from .dns import get_dns_records
 
 
@@ -25,6 +23,5 @@ def dns_test(domain: str, typ: Check = Check.CLIENT,
 
     data = loop.run_until_complete(get_dns_records(domain, typ, ipv4, ipv6, xmpps))
     print(data)
-
 
     return {}

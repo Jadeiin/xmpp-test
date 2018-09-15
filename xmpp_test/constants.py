@@ -20,7 +20,7 @@ class Check(Enum):
     SERVER: int = 0
 
 
-class SRV_TYPES(Enum):
+class SRV_TYPE(Enum):
     XMPP_CLIENT: str = 'xmpp-client'
     XMPP_SERVER: str = 'xmpp-server'
     XMPPS_CLIENT: str = 'xmpps-client'
