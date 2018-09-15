@@ -112,15 +112,15 @@ class SRVRecord:
         if not has_ip4 and not has_ip6:
             tag.error(2, 'SRV-Record %s has no A/AAAA records.' % self.source, 'dns')
         if ip4 and not has_ip4:
-            tag.warning(1, 'No IPv6 records for %s' % self.source, 'dns')
+            tag.warning(3, 'No IPv6 records for %s' % self.source, 'dns')
         if ip6 and not has_ip6:
-            tag.warning(1, 'No IPv6 records for %s' % self.source, 'dns')
+            tag.warning(4, 'No IPv6 records for %s' % self.source, 'dns')
 
 
 class XMPPTarget:
     """A class representing possible connection to an XMPP server.
 
-    A typical XMPP test will run for each available ``XMPPTARGET``, testing if any SRV Record or IP address is
+    A typical XMPP test will run for each available ``XMPPTarget``, testing if any SRV Record or IP address is
     misconfigured.
 
     Parameters
@@ -147,7 +147,7 @@ class XMPPTarget:
         return collections.OrderedDict([
             ('source', self.srv.source),
             ('target', self.srv.target),
-            ('ip', self.ip),
+            ('ip', str(self.ip)),
             ('port', self.srv.port),
         ])
 

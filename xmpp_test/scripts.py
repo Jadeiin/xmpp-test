@@ -62,12 +62,6 @@ def test() -> None:
 
     if args.command == 'dns':
         data, tags = dns_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
-        print(tabulate([d.as_dict() for d in data], headers='keys'))
-
-        if tags:
-            if data:  # we might not have any data to display, and a newline is ugly then
-                print('')
-            print(tabulate([t.as_dict() for t in tags], headers='keys'))
     elif args.command == 'socket':
         if args.typ == 'client':
             results = test_client(args.domain, ipv4=args.ipv4, ipv6=args.ipv6)
@@ -97,3 +91,25 @@ def test() -> None:
         results = test_client_basic(args.domain, ipv4=args.ipv4, ipv6=args.ipv6)
         fieldnames = ['SRV', 'A/AAAA', 'IP', 'port', 'status']
         print(list(results))
+
+    if args.format == 'table':
+        print(tabulate([d.as_dict() for d in data], headers='keys'))
+
+        if tags:
+            if data:  # we might not have any data to display, and a newline is ugly then
+                print('')
+            print(tabulate([t.as_dict() for t in tags], headers='keys'))
+
+    elif args.format == 'csv':
+        data = [d.as_dict() for d in data]
+        if data:
+            writer = csv.DictWriter(sys.stdout, delimiter=',', fieldnames=data[0].keys())
+            writer.writeheader()
+            for d in data:
+                writer.writerow(d)
+
+    elif args.format == 'json':
+        print(json.dumps({
+            'data': [d.as_dict() for d in data],
+            'tags': [t.as_dict() for t in tags],
+        }, indent=4))
