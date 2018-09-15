@@ -205,14 +205,19 @@ def get_srv_services(typ: Check, xmpps: bool = True) -> Generator[SRV_TYPE, None
         raise ValueError("Unknown check type: %s" % typ)
 
 
-async def get_dns_records(domain, typ: Check = Check.CLIENT,
+async def gen_dns_records(domain, typ: Check = Check.CLIENT,
                           ipv4: bool = True, ipv6: bool = True, xmpps: bool = True):
-    records = []
     for srv_service in get_srv_services(typ, xmpps=xmpps):
         for srv_record in await srv_records(srv_service, domain):
             async for result in srv_record.resolve(ip4=ipv4, ip6=ipv6):
-                records.append(result)
+                yield result
 
+
+async def get_dns_records(domain, typ: Check = Check.CLIENT,
+                          ipv4: bool = True, ipv6: bool = True, xmpps: bool = True):
+    records = []
+    async for record in gen_dns_records(domain, typ, ipv4, ipv6, xmpps):
+        records.append(record)
     return records
 
 
