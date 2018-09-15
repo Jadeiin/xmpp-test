@@ -1,6 +1,7 @@
 *.sw[op]
 /.mypy_cache/
 /bin/
+/docs/_build/
 /include/
 /lib/
 /pip-selfcheck.json
