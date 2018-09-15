@@ -93,11 +93,17 @@ def test() -> None:
         print(list(results))
 
     if args.format == 'table':
+        print('###########')
+        print('# RESULTS #')
+        print('###########')
         print(tabulate([d.as_dict() for d in data], headers='keys'))
 
         if tags:
             if data:  # we might not have any data to display, and a newline is ugly then
                 print('')
+            print('########')
+            print('# Tags #')
+            print('########')
             print(tabulate([t.as_dict() for t in tags], headers='keys'))
 
     elif args.format == 'csv':

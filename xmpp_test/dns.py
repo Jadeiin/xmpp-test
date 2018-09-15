@@ -112,9 +112,9 @@ class SRVRecord:
         if not has_ip4 and not has_ip6:
             tag.error(2, 'SRV-Record %s has no A/AAAA records.' % self.source, 'dns')
         if ip4 and not has_ip4:
-            tag.warning(3, 'No IPv6 records for %s' % self.source, 'dns')
+            tag.warning(3, 'No IPv6 records for %s' % self.target, 'dns')
         if ip6 and not has_ip6:
-            tag.warning(4, 'No IPv6 records for %s' % self.source, 'dns')
+            tag.warning(4, 'No IPv6 records for %s' % self.target, 'dns')
 
 
 class XMPPTarget:
