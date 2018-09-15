@@ -23,6 +23,7 @@ from .constants import SRV_XMPPS_CLIENT
 from .constants import SRV_XMPPS_SERVER
 from .constants import SRV_XMPP_CLIENT
 from .constants import SRV_XMPP_SERVER
+from .tags import tag
 
 
 class SRVRecord:
@@ -46,22 +47,27 @@ class SRVRecord:
         self.port = port
         self.target = target
 
+    @property
+    def source(self) -> str:
+        return '_%s._%s.%s' % (self.service, self.proto, self.domain)
+
     def __str__(self) -> str:
-        return '_%s._%s.%s -> %s:%s' % (self.service, self.proto, self.domain, self.target, self.port)
+        return '%s -> %s:%s' % (self.source, self.target, self.port)
 
     def __repr__(self) -> str:
         return '<SRVRecord: %s>' % self
 
     async def resolve(self) -> AsyncGenerator[List[Union[IPv4Address, IPv6Address]], None]:
         resolver = aiodns.DNSResolver()
-        has_records = False
+        has_ip4 = False
+        has_ip6 = False
 
         try:
             ip4_records = await resolver.query(self.target, 'A')
             for result in ip4_records:
                 print(dir(result))
                 yield result
-            has_records = True
+            has_ip4 = True
         except aiodns.error.DNSError:
             pass
 
@@ -69,18 +75,26 @@ class SRVRecord:
             ip6_records = await resolver.query(self.target, 'AAAA')
             for result in ip6_records:
                 yield result
-            has_records = True
+            has_ip6 = True
         except aiodns.error.DNSError:
             pass
 
-        if has_records is False:
-            raise RuntimeError('No Records for this SRV record!')
+        if not has_ip4 and not has_ip6:
+            tag.error(2, 'SRV-Record %s has no A/AAAA records.' % self.source, 'dns')
+        elif not has_ip4:
+            tag.warn(1, 'No IPv6 records for %s' % self.source, 'dns')
+        elif not has_ip6:
+            tag.warn(1, 'No IPv6 records for %s' % self.source, 'dns')
 
 
 async def srv_records(service, domain, proto='tcp'):
     resolver = aiodns.DNSResolver()
     query = '_%s._%s.%s' % (service, proto, domain)
-    results = await resolver.query(query, 'SRV')
+    try:
+        results = await resolver.query(query, 'SRV')
+    except aiodns.error.DNSError:
+        tag.error(0, 'No SRV record "%s" for domain %s' % (query, domain), 'dns')
+
     return [SRVRecord(
         service=service, proto=proto, domain=domain,
         ttl=r.ttl, priority=r.priority, weight=r.weight,
