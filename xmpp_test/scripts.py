@@ -21,8 +21,7 @@ from tabulate import tabulate  # type: ignore
 from .clients import test_client_basic
 from .constants import Check
 from .dns import dns_test
-from .socket import test_client
-from .socket import test_server
+from .socket import socket_test
 
 
 def test() -> None:
@@ -63,40 +62,20 @@ def test() -> None:
     if args.command == 'dns':
         data, tags = dns_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
     elif args.command == 'socket':
-        if args.typ == 'client':
-            results = test_client(args.domain, ipv4=args.ipv4, ipv6=args.ipv6)
-        elif args.typ == 'server':
-            results = test_server(args.domain, ipv4=args.ipv4, ipv6=args.ipv6)
-
-        fieldnames = ['SRV', 'A/AAAA', 'IP', 'port', 'status']
-        if args.format == 'table':
-            results = [(r[1], r[2], r[3], r[4], 'ok' if r[5] else 'failed') for r in results]
-            print(tabulate(results, headers=fieldnames))
-        elif args.format == 'csv':
-            writer = csv.writer(sys.stdout, delimiter=',')
-            writer.writerow(fieldnames)
-            for r in results:
-                writer.writerow((r[1], r[2], r[3], r[4], 'ok' if r[5] else 'failed'))
-        else:
-            data = [{
-                'srv': r[1],
-                'host': r[2],
-                'ip': str(r[3]),
-                'port': r[4],
-                'status': r[5]
-            } for r in results]
-            print(json.dumps(data))
-
+        data, tags = socket_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
     elif args.command == 'basic':
         results = test_client_basic(args.domain, ipv4=args.ipv4, ipv6=args.ipv6)
-        fieldnames = ['SRV', 'A/AAAA', 'IP', 'port', 'status']
+        #fieldnames = ['SRV', 'A/AAAA', 'IP', 'port', 'status']
         print(list(results))
 
     if args.format == 'table':
         print('###########')
         print('# RESULTS #')
         print('###########')
-        print(tabulate([d.as_dict() for d in data], headers='keys'))
+        print(tabulate([
+            d.tabulate() if hasattr(d, 'tabulate') else d.as_dict()
+            for d in data
+        ], headers='keys'))
 
         if tags:
             if data:  # we might not have any data to display, and a newline is ugly then
