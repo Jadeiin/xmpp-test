@@ -14,17 +14,22 @@
 import collections
 import threading
 import typing
-from .constants import TAG_LEVEL_DEBUG
-from .constants import TAG_LEVEL_ERROR
-from .constants import TAG_LEVEL_INFO
-from .constants import TAG_LEVEL_WARNING
+from .constants import TAG_TYPE
 
 
 class Tag(typing.NamedTuple):
     id: int
-    level: int
+    level: TAG_TYPE
     message: str
     group: str
+
+    def as_dict(self) -> dict:
+        return collections.OrderedDict([
+            ('id', self.id),
+            ('level', self.level.name),
+            ('message', self.message),
+            ('group', self.group),
+        ])
 
 
 class Tagger:
@@ -39,22 +44,22 @@ class Tagger:
             self.data.tags.append(tag)
 
     def debug(self, id: int, message: str, group: str) -> Tag:
-        t = Tag(id, TAG_LEVEL_DEBUG, message, group)
+        t = Tag(id, TAG_TYPE.DEBUG, message, group)
         self.append(t)
         return t
 
     def info(self, id: int, message: str, group: str) -> Tag:
-        t = Tag(id, TAG_LEVEL_INFO, message, group)
+        t = Tag(id, TAG_TYPE.INFO, message, group)
         self.append(t)
         return t
 
     def warning(self, id: int, message: str, group: str) -> Tag:
-        t = Tag(id, TAG_LEVEL_WARNING, message, group)
+        t = Tag(id, TAG_TYPE.WARNING, message, group)
         self.append(t)
         return t
 
     def error(self, id: int, message: str, group: str) -> Tag:
-        t = Tag(id, TAG_LEVEL_ERROR, message, group)
+        t = Tag(id, TAG_TYPE.ERROR, message, group)
         self.append(t)
         return t
 

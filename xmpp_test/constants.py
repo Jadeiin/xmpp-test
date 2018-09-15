@@ -13,9 +13,10 @@
 
 import logging
 from enum import Enum
+from enum import IntEnum
 
 
-class Check(Enum):
+class Check(IntEnum):
     CLIENT: int = 1
     SERVER: int = 0
 
@@ -31,7 +32,9 @@ XMPP_TYPE_PLAIN = 0
 XMPP_TYPE_STARTTLS = 1
 XMPP_TYPE_TLS = 2
 
-TAG_LEVEL_DEBUG = logging.DEBUG
-TAG_LEVEL_INFO = logging.INFO
-TAG_LEVEL_WARNING = logging.WARNING
-TAG_LEVEL_ERROR = logging.ERROR
+
+class TAG_TYPE(IntEnum):
+    DEBUG: int = logging.DEBUG
+    INFO: int = logging.INFO
+    WARNING: int = logging.WARNING
+    ERROR: int = logging.ERROR

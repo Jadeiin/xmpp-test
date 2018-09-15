@@ -11,6 +11,7 @@
 # You should have received a copy of the GNU General Public License along with xmpp-test.  If not, see
 # <http://www.gnu.org/licenses/>.
 
+import collections
 from ipaddress import IPv4Address
 from ipaddress import IPv6Address
 from ipaddress import ip_address
@@ -110,9 +111,9 @@ class SRVRecord:
 
         if not has_ip4 and not has_ip6:
             tag.error(2, 'SRV-Record %s has no A/AAAA records.' % self.source, 'dns')
-        elif ip4 and not has_ip4:
+        if ip4 and not has_ip4:
             tag.warning(1, 'No IPv6 records for %s' % self.source, 'dns')
-        elif ip6 and not has_ip6:
+        if ip6 and not has_ip6:
             tag.warning(1, 'No IPv6 records for %s' % self.source, 'dns')
 
 
@@ -141,6 +142,14 @@ class XMPPTarget:
 
     def __repr__(self) -> str:
         return '<XMPPTarget: %s>' % self
+
+    def as_dict(self) -> dict:
+        return collections.OrderedDict([
+            ('source', self.srv.source),
+            ('target', self.srv.target),
+            ('ip', self.ip),
+            ('port', self.srv.port),
+        ])
 
 
 async def srv_records(service: SRV_TYPE, domain: str) -> List[SRVRecord]:
@@ -200,7 +209,7 @@ async def get_dns_records(domain, typ: Check = Check.CLIENT,
     records = []
     for srv_service in get_srv_services(typ, xmpps=xmpps):
         for srv_record in await srv_records(srv_service, domain):
-            async for result in srv_record.resolve(ipv4=ipv4, ipv6=ipv6):
+            async for result in srv_record.resolve(ip4=ipv4, ip6=ipv6):
                 records.append(result)
 
     return records

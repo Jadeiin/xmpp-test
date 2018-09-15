@@ -61,8 +61,13 @@ def test() -> None:
     args = parser.parse_args()
 
     if args.command == 'dns':
-        test = dns_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
-        print(test)
+        data, tags = dns_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
+        print(tabulate([d.as_dict() for d in data], headers='keys'))
+
+        if tags:
+            if data:  # we might not have any data to display, and a newline is ugly then
+                print('')
+            print(tabulate([t.as_dict() for t in tags], headers='keys'))
     elif args.command == 'socket':
         if args.typ == 'client':
             results = test_client(args.domain, ipv4=args.ipv4, ipv6=args.ipv6)
