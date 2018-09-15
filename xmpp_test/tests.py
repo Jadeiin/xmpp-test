@@ -14,14 +14,17 @@
 import asyncio
 
 from .constants import Check
+from .constants import SRV_TYPES
 from .dns import srv_records
+from .dns import get_dns_records
 
 
 def dns_test(domain: str, typ: Check = Check.CLIENT,
              ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> dict:
     loop = asyncio.get_event_loop()
 
-    for srv_record in loop.run_until_complete(srv_records('xmpp-client', domain)):
-        print(srv_record)
+    data = loop.run_until_complete(get_dns_records(domain, typ, ipv4, ipv6, xmpps))
+    print(data)
+
 
     return {}

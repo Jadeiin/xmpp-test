@@ -13,8 +13,8 @@
 
 import ipaddress
 import socket
-from .dns import xmpp_client_records
-from .dns import xmpp_server_records
+#from .dns import xmpp_client_records
+#from .dns import xmpp_server_records
 
 
 def test_socket(address, port):

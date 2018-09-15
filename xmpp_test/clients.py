@@ -19,8 +19,8 @@ from slixmpp.stanza import StreamFeatures  # type: ignore
 from slixmpp.xmlstream.handler import CoroutineCallback  # type: ignore
 from slixmpp.xmlstream.matcher import MatchXPath  # type: ignore
 
-from .constants import SRV_XMPPS_CLIENT
-from .dns import xmpp_client_records
+#from .constants import SRV_XMPPS_CLIENT
+#from .dns import xmpp_client_records
 
 
 class ConnectClientBase(BaseXMPP):

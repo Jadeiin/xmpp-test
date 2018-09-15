@@ -19,10 +19,12 @@ from typing import AsyncGenerator
 
 import aiodns  # type: ignore
 
-from .constants import SRV_XMPPS_CLIENT
-from .constants import SRV_XMPPS_SERVER
-from .constants import SRV_XMPP_CLIENT
-from .constants import SRV_XMPP_SERVER
+#from .constants import SRV_XMPPS_CLIENT
+#from .constants import SRV_XMPPS_SERVER
+#from .constants import SRV_XMPP_CLIENT
+#from .constants import SRV_XMPP_SERVER
+from .constants import Check
+from .constants import SRV_TYPES
 from .tags import tag
 
 
@@ -65,7 +67,6 @@ class SRVRecord:
         try:
             ip4_records = await resolver.query(self.target, 'A')
             for result in ip4_records:
-                print(dir(result))
                 yield result
             has_ip4 = True
         except aiodns.error.DNSError:
@@ -87,12 +88,12 @@ class SRVRecord:
             tag.warn(1, 'No IPv6 records for %s' % self.source, 'dns')
 
 
-async def srv_records(service, domain, proto='tcp'):
+async def srv_records(service: SRV_TYPES, domain: str, proto: str = 'tcp') -> List[SRVRecord]:
     resolver = aiodns.DNSResolver()
-    query = '_%s._%s.%s' % (service, proto, domain)
+    query = '_%s._%s.%s' % (service.value, proto, domain)
     try:
         results = await resolver.query(query, 'SRV')
-    except aiodns.error.DNSError:
+    except aiodns.error.DNSError as e:
         tag.error(0, 'No SRV record "%s" for domain %s' % (query, domain), 'dns')
 
     return [SRVRecord(
@@ -102,21 +103,27 @@ async def srv_records(service, domain, proto='tcp'):
     ) for r in results]
 
 
-async def xmpp_client_records(domain):
-    for srv in await srv_records(SRV_XMPP_CLIENT, domain):
-        yield srv
-    for srv in await srv_records(SRV_XMPPS_CLIENT, domain):
-        yield srv
+def get_srv_services(typ: Check, xmpps: bool) -> List[SRV_TYPES]:
+    if typ == Check.CLIENT:
+        yield SRV_TYPES.XMPP_CLIENT
+        if xmpps is True:
+            yield SRV_TYPES.XMPPS_CLIENT
+
+    elif typ == Check.SERVER:
+        yield SRV_TYPES.XMPP_SERVER
+        if xmpps is True:
+            yield SRV_TYPES.XMPPS_CLIENT
+
+    else:
+        raise ValueError("Unknown check type: %s" % typ)
 
 
-async def xmpp_server_records(domain):
-    for srv in await srv_records(SRV_XMPP_SERVER, domain):
-        yield srv
-    for srv in await srv_records(SRV_XMPPS_SERVER, domain):
-        yield srv
+async def get_dns_records(domain, typ: Check = Check.CLIENT,
+                          ipv4: bool = True, ipv6: bool = True, xmpps: bool = True):
+    records = []
+    for srv_service in get_srv_services(typ, xmpps):
+        for srv_record in await srv_records(srv_service, domain):
+            async for result in srv_record.resolve():
+                records.append(result)
 
-
-async def test2(domain, service=SRV_XMPPS_CLIENT):
-    for srv in await srv_records(service, domain):
-        async for result in srv.resolve():
-            print('result: %s' % (result, ))
+    return records

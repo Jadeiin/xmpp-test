@@ -20,10 +20,12 @@ class Check(Enum):
     SERVER: int = 0
 
 
-SRV_XMPP_CLIENT = 'xmpp-client'
-SRV_XMPP_SERVER = 'xmpp-server'
-SRV_XMPPS_CLIENT = 'xmpps-client'
-SRV_XMPPS_SERVER = 'xmpps-server'
+class SRV_TYPES(Enum):
+    XMPP_CLIENT: str = 'xmpp-client'
+    XMPP_SERVER: str = 'xmpp-server'
+    XMPPS_CLIENT: str = 'xmpps-client'
+    XMPPS_SERVER: str = 'xmpps-server'
+
 
 XMPP_TYPE_PLAIN = 0
 XMPP_TYPE_STARTTLS = 1
