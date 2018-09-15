@@ -37,6 +37,8 @@ def test() -> None:
     typ_group.add_argument('-s', '--server', dest='typ', action='store_const', const=Check.SERVER,
                            help="Test XMPP server connections.")
 
+    parser.add_argument('--no-xmpps', dest='xmpps', default=True, action='store_false',
+                        help="Do not test XEP-0368 SRV records.")
     parser.add_argument('--no-ipv4', dest='ipv4', default=True, action='store_false',
                         help="Do not test IPv4 connections.")
     parser.add_argument('--no-ipv6', dest='ipv6', default=True, action='store_false',
@@ -59,7 +61,7 @@ def test() -> None:
     args = parser.parse_args()
 
     if args.command == 'dns':
-        test = dns_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6)
+        test = dns_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
         print(test)
     elif args.command == 'socket':
         if args.typ == 'client':

@@ -17,7 +17,8 @@ from .constants import Check
 from .dns import srv_records
 
 
-def dns_test(domain: str, typ: Check = Check.CLIENT, ipv4: bool = True, ipv6: bool = True) -> dict:
+def dns_test(domain: str, typ: Check = Check.CLIENT,
+             ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> dict:
     loop = asyncio.get_event_loop()
 
     for srv_record in loop.run_until_complete(srv_records('xmpp-client', domain)):
