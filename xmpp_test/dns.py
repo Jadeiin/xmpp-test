@@ -11,6 +11,7 @@
 # You should have received a copy of the GNU General Public License along with xmpp-test.  If not, see
 # <http://www.gnu.org/licenses/>.
 
+import asyncio
 import collections
 from ipaddress import IPv4Address
 from ipaddress import IPv6Address
@@ -213,3 +214,13 @@ async def get_dns_records(domain, typ: Check = Check.CLIENT,
                 records.append(result)
 
     return records
+
+
+def dns_test(domain: str, typ: Check = Check.CLIENT,
+             ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
+    loop = asyncio.get_event_loop()
+
+    data = loop.run_until_complete(get_dns_records(domain, typ, ipv4, ipv6, xmpps))
+    tags = tag.pop_all()
+
+    return data, tags

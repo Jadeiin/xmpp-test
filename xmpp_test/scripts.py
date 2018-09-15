@@ -18,11 +18,11 @@ import sys
 
 from tabulate import tabulate  # type: ignore
 
-from .constants import Check
 from .clients import test_client_basic
+from .constants import Check
+from .dns import dns_test
 from .socket import test_client
 from .socket import test_server
-from .tests import dns_test
 
 
 def test() -> None:
