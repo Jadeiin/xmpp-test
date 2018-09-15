@@ -15,6 +15,7 @@ import asyncio
 
 from .constants import Check
 from .dns import get_dns_records
+from .tags import tag
 
 
 def dns_test(domain: str, typ: Check = Check.CLIENT,
@@ -22,6 +23,10 @@ def dns_test(domain: str, typ: Check = Check.CLIENT,
     loop = asyncio.get_event_loop()
 
     data = loop.run_until_complete(get_dns_records(domain, typ, ipv4, ipv6, xmpps))
+    test_tags = tag.pop_all()
+
+    for test_tag in test_tags:
+        print(tag)
     print(data)
 
     return {}

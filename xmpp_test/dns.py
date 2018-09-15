@@ -13,16 +13,13 @@
 
 from ipaddress import IPv4Address
 from ipaddress import IPv6Address
+from ipaddress import ip_address
 from typing import List
 from typing import Union
 from typing import AsyncGenerator
 
 import aiodns  # type: ignore
 
-#from .constants import SRV_XMPPS_CLIENT
-#from .constants import SRV_XMPPS_SERVER
-#from .constants import SRV_XMPP_CLIENT
-#from .constants import SRV_XMPP_SERVER
 from .constants import Check
 from .constants import SRV_TYPE
 from .tags import tag
@@ -67,7 +64,7 @@ class SRVRecord:
         try:
             ip4_records = await resolver.query(self.target, 'A')
             for result in ip4_records:
-                yield result
+                yield XMPPTarget(self, result.host)
             has_ip4 = True
         except aiodns.error.DNSError:
             pass
@@ -75,7 +72,7 @@ class SRVRecord:
         try:
             ip6_records = await resolver.query(self.target, 'AAAA')
             for result in ip6_records:
-                yield result
+                yield XMPPTarget(self, result.host)
             has_ip6 = True
         except aiodns.error.DNSError:
             pass
@@ -83,9 +80,24 @@ class SRVRecord:
         if not has_ip4 and not has_ip6:
             tag.error(2, 'SRV-Record %s has no A/AAAA records.' % self.source, 'dns')
         elif not has_ip4:
-            tag.warn(1, 'No IPv6 records for %s' % self.source, 'dns')
+            tag.warning(1, 'No IPv6 records for %s' % self.source, 'dns')
         elif not has_ip6:
-            tag.warn(1, 'No IPv6 records for %s' % self.source, 'dns')
+            tag.warning(1, 'No IPv6 records for %s' % self.source, 'dns')
+
+
+class XMPPTarget:
+    srv: SRVRecord
+    ip: Union[IPv4Address, IPv6Address]
+
+    def __init__(self, srv: SRVRecord, ip: str) -> None:
+        self.srv = srv
+        self.ip = ip_address(ip)
+
+    def __str__(self) -> str:
+        return '%s -> %s' % (self.srv, self.ip)
+
+    def __repr__(self) -> str:
+        return '<XMPPTarget: %s>' % self
 
 
 async def srv_records(service: SRV_TYPE, domain: str, proto: str = 'tcp') -> List[SRVRecord]:
@@ -95,9 +107,10 @@ async def srv_records(service: SRV_TYPE, domain: str, proto: str = 'tcp') -> Lis
         results = await resolver.query(query, 'SRV')
     except aiodns.error.DNSError as e:
         tag.error(0, 'No SRV record "%s" for domain %s' % (query, domain), 'dns')
+        return []
 
     return [SRVRecord(
-        service=service, proto=proto, domain=domain,
+        service=service.value, proto=proto, domain=domain,
         ttl=r.ttl, priority=r.priority, weight=r.weight,
         port=r.port, target=r.host
     ) for r in results]

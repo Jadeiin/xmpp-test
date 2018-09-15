@@ -11,7 +11,6 @@
 # You should have received a copy of the GNU General Public License along with xmpp-test.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-import asyncio
 import collections
 import threading
 import typing
@@ -33,15 +32,11 @@ class Tagger:
 
     def __init__(self) -> None:
         self.data.tags = collections.deque()
-        self.data.lock = asyncio.Lock()
+        self.data.lock = threading.Lock()
 
     def append(self, tag: Tag) -> None:
-        async def _append():
-            async with self.data.lock:
-                self.data.tags.append(tag)
-
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(_append())
+        with self.data.lock:
+            self.data.tags.append(tag)
 
     def debug(self, id: int, message: str, group: str) -> Tag:
         t = Tag(id, TAG_LEVEL_DEBUG, message, group)
@@ -50,18 +45,21 @@ class Tagger:
 
     def info(self, id: int, message: str, group: str) -> Tag:
         t = Tag(id, TAG_LEVEL_INFO, message, group)
+        self.append(t)
         return t
 
     def warning(self, id: int, message: str, group: str) -> Tag:
         t = Tag(id, TAG_LEVEL_WARNING, message, group)
+        self.append(t)
         return t
 
     def error(self, id: int, message: str, group: str) -> Tag:
         t = Tag(id, TAG_LEVEL_ERROR, message, group)
+        self.append(t)
         return t
 
-    async def pop_all(self):
-        async with self.data.lock:
+    def pop_all(self):
+        with self.data.lock:
             tags = list(self.data.tags)
             self.data.tags.clear()
         return tags
