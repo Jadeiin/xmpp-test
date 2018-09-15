@@ -86,6 +86,15 @@ class SRVRecord:
 
 
 class XMPPTarget:
+    """A class representing possible connection to an XMPP server.
+
+    Parameters
+    ----------
+
+    srv : SRVRecord
+    ip : str
+    """
+
     srv: SRVRecord
     ip: Union[IPv4Address, IPv6Address]
 
