@@ -51,7 +51,7 @@ class SocketTestResult:
         return d
 
 
-async def test_socket(target: XMPPTarget) -> Tuple[XMPPTarget, bool]:
+async def test_single_socket(target: XMPPTarget) -> Tuple[XMPPTarget, bool]:
     """Asynchronous function to test a single XMPPTarget.
 
     Parameters
@@ -106,7 +106,7 @@ async def run_socket_test(domain: str, typ: Check = Check.CLIENT,
 
     futures = []
     async for target in gen_dns_records(domain, typ, ipv4, ipv6, xmpps):
-        futures.append(asyncio.ensure_future(test_socket(target)))
+        futures.append(asyncio.ensure_future(test_single_socket(target)))
     return [SocketTestResult(t, s) for t, s in await asyncio.gather(*futures)]
 
 
