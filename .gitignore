@@ -1,4 +1,5 @@
 *.sw[op]
+/.mypy_cache/
 /bin/
 /include/
 /lib/
