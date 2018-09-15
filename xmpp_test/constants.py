@@ -11,6 +11,8 @@
 # You should have received a copy of the GNU General Public License along with xmpp-test.  If not, see
 # <http://www.gnu.org/licenses/>.
 
+import logging
+
 SRV_XMPP_CLIENT = 'xmpp-client'
 SRV_XMPP_SERVER = 'xmpp-server'
 SRV_XMPPS_CLIENT = 'xmpps-client'
@@ -19,3 +21,8 @@ SRV_XMPPS_SERVER = 'xmpps-server'
 XMPP_TYPE_PLAIN = 0
 XMPP_TYPE_STARTTLS = 1
 XMPP_TYPE_TLS = 2
+
+TAG_LEVEL_DEBUG = logging.DEBUG
+TAG_LEVEL_INFO = logging.INFO
+TAG_LEVEL_WARNING = logging.WARNING
+TAG_LEVEL_ERROR = logging.ERROR
