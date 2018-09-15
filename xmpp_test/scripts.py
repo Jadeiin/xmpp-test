@@ -25,7 +25,7 @@ from .socket import test_server
 from .tests import dns_test
 
 
-def test():
+def test() -> None:
     domain_parser = argparse.ArgumentParser(add_help=False)
     domain_parser.add_argument('domain', help="The domain to test.")
 
@@ -59,7 +59,7 @@ def test():
     args = parser.parse_args()
 
     if args.command == 'dns':
-        test = dns_test(33, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6)
+        test = dns_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6)
         print(test)
     elif args.command == 'socket':
         if args.typ == 'client':
