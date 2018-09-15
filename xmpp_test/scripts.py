@@ -16,20 +16,25 @@ import csv
 import json
 import sys
 
-from tabulate import tabulate
+from tabulate import tabulate  # type: ignore
 
+from .constants import Check
 from .clients import test_client_basic
 from .socket import test_client
 from .socket import test_server
+from .tests import dns_test
 
 
 def test():
+    domain_parser = argparse.ArgumentParser(add_help=False)
+    domain_parser.add_argument('domain', help="The domain to test.")
+
     parser = argparse.ArgumentParser()
     typ_group = parser.add_mutually_exclusive_group()
-    typ_group.add_argument('-c', '--client', dest='typ', default='client',
-                           action='store_const', const='client',
+    typ_group.add_argument('-c', '--client', dest='typ', default=Check.CLIENT,
+                           action='store_const', const=Check.CLIENT,
                            help="Test XMPP client connections (the default).")
-    typ_group.add_argument('-s', '--server', dest='typ', action='store_const', const='server',
+    typ_group.add_argument('-s', '--server', dest='typ', action='store_const', const=Check.SERVER,
                            help="Test XMPP server connections.")
 
     parser.add_argument('--no-ipv4', dest='ipv4', default=True, action='store_false',
@@ -40,6 +45,9 @@ def test():
                         help="Output format to use (default: %(default)s).")
 
     subparsers = parser.add_subparsers(help='Commands', dest='command')
+
+    subparsers.add_parser('dns', help="Test DNS records for this domain.", parents=[domain_parser])
+
     test_socket = subparsers.add_parser(
         'socket', help='Test a domain by doing a simple socket connection to each DNS entry.')
     test_socket.add_argument('domain', help="The domain to test.")
@@ -50,7 +58,10 @@ def test():
 
     args = parser.parse_args()
 
-    if args.command == 'socket':
+    if args.command == 'dns':
+        test = dns_test(33, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6)
+        print(test)
+    elif args.command == 'socket':
         if args.typ == 'client':
             results = test_client(args.domain, ipv4=args.ipv4, ipv6=args.ipv6)
         elif args.typ == 'server':

@@ -13,11 +13,11 @@
 
 import asyncio
 
-from slixmpp.basexmpp import BaseXMPP
-from slixmpp.clientxmpp import ClientXMPP
-from slixmpp.stanza import StreamFeatures
-from slixmpp.xmlstream.handler import CoroutineCallback
-from slixmpp.xmlstream.matcher import MatchXPath
+from slixmpp.basexmpp import BaseXMPP  # type: ignore
+from slixmpp.clientxmpp import ClientXMPP  # type: ignore
+from slixmpp.stanza import StreamFeatures  # type: ignore
+from slixmpp.xmlstream.handler import CoroutineCallback  # type: ignore
+from slixmpp.xmlstream.matcher import MatchXPath  # type: ignore
 
 from .constants import SRV_XMPPS_CLIENT
 from .dns import xmpp_client_records

@@ -15,8 +15,9 @@ from ipaddress import IPv4Address
 from ipaddress import IPv6Address
 from typing import List
 from typing import Union
+from typing import AsyncGenerator
 
-import aiodns
+import aiodns  # type: ignore
 
 from .constants import SRV_XMPPS_CLIENT
 from .constants import SRV_XMPPS_SERVER
@@ -51,7 +52,7 @@ class SRVRecord:
     def __repr__(self) -> str:
         return '<SRVRecord: %s>' % self
 
-    async def resolve(self) -> List[Union[IPv4Address, IPv6Address]]:
+    async def resolve(self) -> AsyncGenerator[List[Union[IPv4Address, IPv6Address]], None]:
         resolver = aiodns.DNSResolver()
         has_records = False
 

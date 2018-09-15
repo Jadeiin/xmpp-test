@@ -12,6 +12,13 @@
 # <http://www.gnu.org/licenses/>.
 
 import logging
+from enum import Enum
+
+
+class Check(Enum):
+    CLIENT: int = 1
+    SERVER: int = 0
+
 
 SRV_XMPP_CLIENT = 'xmpp-client'
 SRV_XMPP_SERVER = 'xmpp-server'
