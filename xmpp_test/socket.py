@@ -23,6 +23,16 @@ from .dns import XMPPTarget
 
 
 class SocketTestResult:
+    """A test result for a socket test.
+
+    Parameters
+    ----------
+
+    target : XMPPTarget
+        The XMPPTarget this test is for.
+    successful : bool
+        ``True`` if the test was successful or ``False`` otherwise.
+    """
     target: XMPPTarget
     successful: bool
 
@@ -42,6 +52,22 @@ class SocketTestResult:
 
 
 async def test_socket(target: XMPPTarget) -> Tuple[XMPPTarget, bool]:
+    """Asynchronous function to test a single XMPPTarget.
+
+    Parameters
+    ----------
+
+    target : XMPPTarget
+        The target to test.
+
+    Returns
+    -------
+
+    target : XMPPTarget
+        The same target that was passed to this function.
+    success : bool
+        If the test was successful or not.
+    """
     ip = str(target.ip)
     port = target.srv.port
 
@@ -59,6 +85,24 @@ async def test_socket(target: XMPPTarget) -> Tuple[XMPPTarget, bool]:
 async def run_socket_test(domain: str, typ: Check = Check.CLIENT,
                           ipv4: bool = True, ipv6: bool = True, xmpps: bool = True
                           ) -> List[SocketTestResult]:
+    """Test all configured XMPP SRV records by doing a basic socket connection.
+
+    This test has nothing to do with XMPP connections yet.
+
+    Parameters
+    ----------
+
+    domain : str
+        The domain to test.
+    check : Check
+        Wether to check XMPP client or server connections.
+    ip4: bool, optional
+        Wether or not to test IPv4 connections.
+    ip6 : bool, optional
+        Wether or not to test IPv6 connections.
+    xmpps : bool, optional
+        Wether or not to test XEP-0368 style XMPPS connections.
+    """
 
     futures = []
     async for target in gen_dns_records(domain, typ, ipv4, ipv6, xmpps):
@@ -68,6 +112,8 @@ async def run_socket_test(domain: str, typ: Check = Check.CLIENT,
 
 def socket_test(domain: str, typ: Check = Check.CLIENT,
                 ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
+    """Synchronous wrapper for :py:func:`run_socket_test`."""
+
     loop = asyncio.get_event_loop()
     data = loop.run_until_complete(run_socket_test(domain, typ, ipv4, ipv6, xmpps))
     tags = tag.pop_all()

@@ -11,6 +11,7 @@ Welcome to xmpp-test's documentation!
    :caption: Contents:
 
    api/dns
+   api/socket
 
 
 Indices and tables
