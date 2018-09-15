@@ -15,6 +15,7 @@ from ipaddress import IPv4Address
 from ipaddress import IPv6Address
 from ipaddress import ip_address
 from typing import List
+from typing import Generator
 from typing import Union
 from typing import AsyncGenerator
 
@@ -79,34 +80,39 @@ class SRVRecord:
     def __repr__(self) -> str:
         return '<SRVRecord: %s>' % self
 
-    async def resolve(self) -> AsyncGenerator['XMPPTarget', None]:
+    async def resolve(self, ip4: bool = True, ip6: bool = True) -> AsyncGenerator['XMPPTarget', None]:
         """Resolve this SRV record to IPv4/IPv6 records in an asynchronous generator."""
+
+        if not ip4 and not ip6:
+            raise ValueError("Both IPv4 and IPv6 resolution are disabled.")
 
         resolver = aiodns.DNSResolver()
         has_ip4 = False
         has_ip6 = False
 
-        try:
-            ip4_records = await resolver.query(self.target, 'A')
-            for result in ip4_records:
-                yield XMPPTarget(self, result.host)
-            has_ip4 = True
-        except aiodns.error.DNSError:
-            pass
+        if ip4:
+            try:
+                ip4_records = await resolver.query(self.target, 'A')
+                for result in ip4_records:
+                    yield XMPPTarget(self, result.host)
+                has_ip4 = True
+            except aiodns.error.DNSError:
+                pass
 
-        try:
-            ip6_records = await resolver.query(self.target, 'AAAA')
-            for result in ip6_records:
-                yield XMPPTarget(self, result.host)
-            has_ip6 = True
-        except aiodns.error.DNSError:
-            pass
+        if ip6:
+            try:
+                ip6_records = await resolver.query(self.target, 'AAAA')
+                for result in ip6_records:
+                    yield XMPPTarget(self, result.host)
+                has_ip6 = True
+            except aiodns.error.DNSError:
+                pass
 
         if not has_ip4 and not has_ip6:
             tag.error(2, 'SRV-Record %s has no A/AAAA records.' % self.source, 'dns')
-        elif not has_ip4:
+        elif ip4 and not has_ip4:
             tag.warning(1, 'No IPv6 records for %s' % self.source, 'dns')
-        elif not has_ip6:
+        elif ip6 and not has_ip6:
             tag.warning(1, 'No IPv6 records for %s' % self.source, 'dns')
 
 
@@ -137,7 +143,18 @@ class XMPPTarget:
         return '<XMPPTarget: %s>' % self
 
 
-async def srv_records(service: SRV_TYPE, domain: str, proto: str = 'tcp') -> List[SRVRecord]:
+async def srv_records(service: SRV_TYPE, domain: str) -> List[SRVRecord]:
+    """Return list of SRV records for the given SRV type and for the given domain.
+
+    Parameters
+    ----------
+
+    service : SRV_TYPE
+        One of the SRV_TYPE constants designating the desired XMPP service.
+    domain : str
+        The Domain to test.
+    """
+    proto = 'tcp'
     resolver = aiodns.DNSResolver()
     query = '_%s._%s.%s' % (service.value, proto, domain)
     try:
@@ -153,7 +170,17 @@ async def srv_records(service: SRV_TYPE, domain: str, proto: str = 'tcp') -> Lis
     ) for r in results]
 
 
-def get_srv_services(typ: Check, xmpps: bool) -> List[SRV_TYPE]:
+def get_srv_services(typ: Check, xmpps: bool = True) -> Generator[SRV_TYPE, None, None]:
+    """Get the desired XMPP services.
+
+    Parameters
+    ----------
+
+    typ : Check
+        Wether to test the client or server side.
+    xmpps : bool, optional
+        Set to False to exclude XEP-0368 style SRV records.
+    """
     if typ == Check.CLIENT:
         yield SRV_TYPE.XMPP_CLIENT
         if xmpps is True:
@@ -171,9 +198,9 @@ def get_srv_services(typ: Check, xmpps: bool) -> List[SRV_TYPE]:
 async def get_dns_records(domain, typ: Check = Check.CLIENT,
                           ipv4: bool = True, ipv6: bool = True, xmpps: bool = True):
     records = []
-    for srv_service in get_srv_services(typ, xmpps):
+    for srv_service in get_srv_services(typ, xmpps=xmpps):
         for srv_record in await srv_records(srv_service, domain):
-            async for result in srv_record.resolve():
+            async for result in srv_record.resolve(ipv4=ipv4, ipv6=ipv6):
                 records.append(result)
 
     return records
