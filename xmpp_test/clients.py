@@ -138,7 +138,7 @@ class TLSTestClient(ConnectClientBase):
         super().__init__(*args, **kwargs)
 
         self._test_ssl_context = ssl_context
-        self.starttls_required = False
+        self._test_starttls_required = False
 
         self.add_event_handler('ssl_cert', self.handle_ssl_cert)
         self.register_handler(
@@ -153,9 +153,8 @@ class TLSTestClient(ConnectClientBase):
         # NOTE: yes, that dict-lookup is correct, features['starttls'] always works
         if 'starttls' in features['features']:
             stanza = features['starttls']
-            print(stanza.get_required(), dir(stanza))
-            # get_required() is always True :-/
-            # TODO: set self.starttls_required
+            query = '{%s}required' % stanza.namespace
+            self._test_starttls_required = stanza.xml.find(query) is not None
 
     def handle_stream_negotiated(self, *args, **kwargs):
         self._test_success = True
@@ -168,14 +167,18 @@ class TLSTestClient(ConnectClientBase):
 
 class TLSTestResult(TestResult):
     context: ssl.SSLContext
+    starttls_required: bool
 
-    def __init__(self, target: XMPPTarget, success: bool, context: ssl.SSLContext) -> None:
+    def __init__(self, target: XMPPTarget, success: bool,
+                 context: ssl.SSLContext, starttls_required: bool) -> None:
         super().__init__(target, success)
         self.context = context
+        self.starttls_required = starttls_required
 
     def as_dict(self) -> dict:
         d = super().as_dict()
         d['protocol'] = self.context.protocol.name[9:]
+        d['starttls_required'] = self.starttls_required
         return d
 
 
@@ -199,7 +202,8 @@ async def test_tls_target(domain: str, target: XMPPTarget,
     client.connect(ip, port, **kwargs)
     await client.process(forever=False, timeout=10)
 
-    return TLSTestResult(target, client._test_success, context)
+    return TLSTestResult(target, client._test_success, context=context,
+                         starttls_required=client._test_starttls_required)
 
 
 async def run_tls_test(domain: str, typ: Check = Check.CLIENT,
