@@ -12,6 +12,7 @@
 # <http://www.gnu.org/licenses/>.
 
 import asyncio
+import ssl
 from typing import Tuple
 
 from slixmpp.basexmpp import BaseXMPP  # type: ignore
@@ -133,9 +134,10 @@ def basic_client_test(domain: str, typ: Check = Check.CLIENT,
 
 
 class TLSTestClient(ConnectClientBase):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, ssl_context, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self._test_ssl_context = ssl_context
         self.starttls_required = False
 
         self.add_event_handler('ssl_cert', self.handle_ssl_cert)
@@ -143,6 +145,9 @@ class TLSTestClient(ConnectClientBase):
             CoroutineCallback('Stream Features for TLS',
                               MatchXPath('{%s}features' % self.stream_ns),
                               self._tls_stream_features))
+
+    def get_ssl_context(self):
+        return self._test_ssl_context
 
     async def _tls_stream_features(self, features):
         # NOTE: yes, that dict-lookup is correct, features['starttls'] always works
@@ -153,6 +158,7 @@ class TLSTestClient(ConnectClientBase):
             # TODO: set self.starttls_required
 
     def handle_stream_negotiated(self, *args, **kwargs):
+        self._test_success = True
         self.abort()
 
     def handle_ssl_cert(self, cert: str) -> None:
@@ -161,21 +167,39 @@ class TLSTestClient(ConnectClientBase):
 
 
 class TLSTestResult(TestResult):
-    pass
+    context: ssl.SSLContext
+
+    def __init__(self, target: XMPPTarget, success: bool, context: ssl.SSLContext) -> None:
+        super().__init__(target, success)
+        self.context = context
+
+    def as_dict(self) -> dict:
+        d = super().as_dict()
+        d['protocol'] = self.context.protocol.name[9:]
+        return d
 
 
-async def test_tls_target(domain: str, target: XMPPTarget) -> Tuple[XMPPTarget, bool]:
+def tls_context():
+    protocols = ['TLSv1_3', 'TLSv1_2', 'TLSv1_1', 'TLSv1', 'SSLv3', 'SSLv2']
+    for protocol in protocols:
+        proto = getattr(ssl, 'PROTOCOL_%s' % protocol, None)
+        if proto is not None:
+            yield ssl.SSLContext(protocol=proto)
+
+
+async def test_tls_target(domain: str, target: XMPPTarget,
+                          context: ssl.SSLContext) -> Tuple[XMPPTarget, bool]:
     ip = str(target.ip)
     port = target.srv.port
 
     kwargs = {
         'use_ssl': target.is_xmpps,
     }
-    client = TLSTestClient(domain, ip, port)
+    client = TLSTestClient(context, domain, ip, port)
     client.connect(ip, port, **kwargs)
     await client.process(forever=False, timeout=10)
 
-    return target, client._test_success
+    return TLSTestResult(target, client._test_success, context)
 
 
 async def run_tls_test(domain: str, typ: Check = Check.CLIENT,
@@ -183,8 +207,9 @@ async def run_tls_test(domain: str, typ: Check = Check.CLIENT,
 
     futures = []
     async for target in gen_dns_records(domain, typ, ipv4, ipv6, xmpps):
-        futures.append(asyncio.ensure_future(test_tls_target(domain, target)))
-    return [TLSTestResult(t, s) for t, s in await asyncio.gather(*futures)]
+        for context in tls_context():
+            futures.append(asyncio.ensure_future(test_tls_target(domain, target, context)))
+    return await asyncio.gather(*futures)
 
 
 def tls_test(domain: str, typ: Check = Check.CLIENT,
