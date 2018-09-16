@@ -20,6 +20,7 @@ from slixmpp.stanza import StreamFeatures  # type: ignore
 from slixmpp.xmlstream.handler import CoroutineCallback  # type: ignore
 from slixmpp.xmlstream.matcher import MatchXPath  # type: ignore
 
+from .base import TestResult
 from .constants import Check
 from .tags import tag
 from .dns import gen_dns_records
@@ -65,7 +66,6 @@ class ConnectClientBase(BaseXMPP):
         return self._test_host, str(self._test_address), self._test_port
 
     def handle_stream_negotiated(self, *args, **kwargs):
-        print('stream negotiated:', args, kwargs)
         self._test_success = True
         self.abort()
 
@@ -89,23 +89,8 @@ class BasicConnectClient(ConnectClientBase):
         await asyncio.ensure_future(asyncio.wait(tasks))
 
 
-class BasicConnectTestResult:
-    target: XMPPTarget
-    success: bool
-
-    def __init__(self, target: XMPPTarget, success: bool) -> None:
-        self.target = target
-        self.success = success
-
-    def as_dict(self) -> dict:
-        d = self.target.as_dict()
-        d['status'] = self.success
-        return d
-
-    def tabulate(self) -> dict:
-        d = self.as_dict()
-        d['status'] = 'working' if d['status'] else 'failed'
-        return d
+class BasicConnectTestResult(TestResult):
+    pass
 
 
 async def test_basic_target(domain: str, target: XMPPTarget) -> Tuple[XMPPTarget, bool]:

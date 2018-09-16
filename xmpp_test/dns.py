@@ -12,17 +12,14 @@
 # <http://www.gnu.org/licenses/>.
 
 import asyncio
-import collections
-from ipaddress import IPv4Address
-from ipaddress import IPv6Address
-from ipaddress import ip_address
 from typing import List
 from typing import Generator
-from typing import Union
 from typing import AsyncGenerator
 
 import aiodns  # type: ignore
 
+from .base import XMPPTarget
+from .base import TestResult
 from .constants import Check
 from .constants import SRV_TYPE
 from .tags import tag
@@ -86,7 +83,7 @@ class SRVRecord:
     def is_xmpps(self) -> bool:
         return self.service == SRV_TYPE.XMPPS_CLIENT.value or self.service == SRV_TYPE.XMPPS_SERVER.value
 
-    async def resolve(self, ip4: bool = True, ip6: bool = True) -> AsyncGenerator['XMPPTarget', None]:
+    async def resolve(self, ip4: bool = True, ip6: bool = True) -> AsyncGenerator[XMPPTarget, None]:
         """Resolve this SRV record to IPv4/IPv6 records in an asynchronous generator."""
 
         if not ip4 and not ip6:
@@ -122,45 +119,6 @@ class SRVRecord:
             tag.warning(4, 'No IPv6 records for %s' % self.target, 'dns')
 
 
-class XMPPTarget:
-    """A class representing possible connection to an XMPP server.
-
-    A typical XMPP test will run for each available ``XMPPTarget``, testing if any SRV Record or IP address is
-    misconfigured.
-
-    Parameters
-    ----------
-
-    srv : SRVRecord
-    ip : str
-    """
-
-    srv: SRVRecord
-    ip: Union[IPv4Address, IPv6Address]
-
-    def __init__(self, srv: SRVRecord, ip: str) -> None:
-        self.srv = srv
-        self.ip = ip_address(ip)
-
-    def __str__(self) -> str:
-        return '%s -> %s' % (self.srv, self.ip)
-
-    def __repr__(self) -> str:
-        return '<XMPPTarget: %s>' % self
-
-    @property
-    def is_xmpps(self) -> bool:
-        return self.srv.is_xmpps
-
-    def as_dict(self) -> dict:
-        return collections.OrderedDict([
-            ('source', self.srv.source),
-            ('target', self.srv.target),
-            ('ip', str(self.ip)),
-            ('port', self.srv.port),
-        ])
-
-
 async def srv_records(service: SRV_TYPE, domain: str) -> List[SRVRecord]:
     """Return list of SRV records for the given SRV type and for the given domain.
 
@@ -186,6 +144,19 @@ async def srv_records(service: SRV_TYPE, domain: str) -> List[SRVRecord]:
         ttl=r.ttl, priority=r.priority, weight=r.weight,
         port=r.port, target=r.host
     ) for r in results]
+
+
+class DNSTestResult(TestResult):
+    def __init__(self, target: XMPPTarget, success: bool = True) -> None:
+        super().__init__(target, success)
+
+    def as_dict(self) -> dict:
+        d = super().as_dict()
+        d.pop('success')
+        return d
+
+    def tabulate(self) -> dict:
+        return self.as_dict()
 
 
 def get_srv_services(typ: Check, xmpps: bool = True) -> Generator[SRV_TYPE, None, None]:
@@ -225,7 +196,7 @@ async def get_dns_records(domain, typ: Check = Check.CLIENT,
                           ipv4: bool = True, ipv6: bool = True, xmpps: bool = True):
     records = []
     async for record in gen_dns_records(domain, typ, ipv4, ipv6, xmpps):
-        records.append(record)
+        records.append(DNSTestResult(record))
     return records
 
 

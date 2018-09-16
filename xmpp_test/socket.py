@@ -20,35 +20,13 @@ from .constants import Check
 from .dns import gen_dns_records
 from .tags import tag
 from .dns import XMPPTarget
+from .base import TestResult
 
 
-class SocketTestResult:
-    """A test result for a socket test.
+class SocketTestResult(TestResult):
+    """A test result for a socket test."""
 
-    Parameters
-    ----------
-
-    target : XMPPTarget
-        The XMPPTarget this test is for.
-    successful : bool
-        ``True`` if the test was successful or ``False`` otherwise.
-    """
-    target: XMPPTarget
-    successful: bool
-
-    def __init__(self, target: XMPPTarget, successful: bool) -> None:
-        self.target = target
-        self.successful = successful
-
-    def as_dict(self) -> dict:
-        d = self.target.as_dict()
-        d['status'] = self.successful
-        return d
-
-    def tabulate(self) -> dict:
-        d = self.as_dict()
-        d['status'] = 'working' if d['status'] else 'failed'
-        return d
+    pass
 
 
 async def test_single_socket(target: XMPPTarget) -> Tuple[XMPPTarget, bool]:
