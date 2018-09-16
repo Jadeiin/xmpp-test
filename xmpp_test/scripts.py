@@ -19,6 +19,7 @@ import sys
 from tabulate import tabulate  # type: ignore
 
 from .clients import basic_client_test
+from .clients import tls_test
 from .constants import Check
 from .dns import dns_test
 from .socket import socket_test
@@ -57,6 +58,9 @@ def test() -> None:
         'basic', help='Basic XMPP connection test.')
     test_socket.add_argument('domain', help="The domain to test.")
 
+    test_tls = subparsers.add_parser('tls', help='Test TLS cipher suites.')
+    test_tls.add_argument('domain', help="The domain to test.")
+
     args = parser.parse_args()
 
     if args.command == 'dns':
@@ -66,6 +70,8 @@ def test() -> None:
     elif args.command == 'basic':
         data, tags = basic_client_test(args.domain, typ=args.typ,
                                        ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
+    elif args.command == 'tls':
+        data, tags = tls_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
 
     if args.format == 'table':
         print('###########')

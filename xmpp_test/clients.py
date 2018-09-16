@@ -52,7 +52,6 @@ class ConnectClientBase(BaseXMPP):
             CoroutineCallback('Stream Features',
                               MatchXPath('{%s}features' % self.stream_ns),
                               self._handle_stream_features))
-
         self.register_plugin('feature_starttls')
 
         self.add_event_handler('stream_negotiated', self.handle_stream_negotiated)
@@ -65,16 +64,25 @@ class ConnectClientBase(BaseXMPP):
     async def pick_dns_answer(self, default_domain):
         return self._test_host, str(self._test_address), self._test_port
 
+    async def process(self, *, forever=True, timeout=None):
+        tasks = [asyncio.sleep(timeout)]
+
+        # TODO: We don't seem to need this
+        tasks = []
+        if not forever:
+            tasks.append(self.disconnected)
+        await asyncio.ensure_future(asyncio.wait(tasks))
+
     def handle_stream_negotiated(self, *args, **kwargs):
         self._test_success = True
         self.abort()
 
     def handle_stream_end(self, *args, **kwargs):
-        print('session end:', args, kwargs)
+        #print('session end:', args, kwargs)
         self.abort()
 
     def handle_connection_failed(self, exception):
-        print('connection failed', exception)
+        #print('connection failed', exception)
         self.abort()
         if not self.disconnected.cancelled():
             self.disconnected.set_result(True)
@@ -82,11 +90,7 @@ class ConnectClientBase(BaseXMPP):
 
 
 class BasicConnectClient(ConnectClientBase):
-    async def process(self, *, forever=True, timeout=None):
-        tasks = [asyncio.sleep(timeout)]
-        if not forever:
-            tasks.append(self.disconnected)
-        await asyncio.ensure_future(asyncio.wait(tasks))
+    pass
 
 
 class BasicConnectTestResult(TestResult):
@@ -119,7 +123,77 @@ async def run_basic_client_test(domain: str, typ: Check = Check.CLIENT,
 def basic_client_test(domain: str, typ: Check = Check.CLIENT,
                       ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
 
+    import logging
+    logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
+
     loop = asyncio.get_event_loop()
     data = loop.run_until_complete(run_basic_client_test(domain, typ, ipv4, ipv6, xmpps))
+    tags = tag.pop_all()
+    return data, tags
+
+
+class TLSTestClient(ConnectClientBase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.starttls_required = False
+
+        self.add_event_handler('ssl_cert', self.handle_ssl_cert)
+        self.register_handler(
+            CoroutineCallback('Stream Features for TLS',
+                              MatchXPath('{%s}features' % self.stream_ns),
+                              self._tls_stream_features))
+
+    async def _tls_stream_features(self, features):
+        # NOTE: yes, that dict-lookup is correct, features['starttls'] always works
+        if 'starttls' in features['features']:
+            stanza = features['starttls']
+            print(stanza.get_required(), dir(stanza))
+            # get_required() is always True :-/
+            # TODO: set self.starttls_required
+
+    def handle_stream_negotiated(self, *args, **kwargs):
+        self.abort()
+
+    def handle_ssl_cert(self, cert: str) -> None:
+        """Gets the TLS cert as PEM/string."""
+        pass  # TODO: Handle TLS cert
+
+
+class TLSTestResult(TestResult):
+    pass
+
+
+async def test_tls_target(domain: str, target: XMPPTarget) -> Tuple[XMPPTarget, bool]:
+    ip = str(target.ip)
+    port = target.srv.port
+
+    kwargs = {
+        'use_ssl': target.is_xmpps,
+    }
+    client = TLSTestClient(domain, ip, port)
+    client.connect(ip, port, **kwargs)
+    await client.process(forever=False, timeout=10)
+
+    return target, client._test_success
+
+
+async def run_tls_test(domain: str, typ: Check = Check.CLIENT,
+                       ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
+
+    futures = []
+    async for target in gen_dns_records(domain, typ, ipv4, ipv6, xmpps):
+        futures.append(asyncio.ensure_future(test_tls_target(domain, target)))
+    return [TLSTestResult(t, s) for t, s in await asyncio.gather(*futures)]
+
+
+def tls_test(domain: str, typ: Check = Check.CLIENT,
+             ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
+
+    import logging
+    logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
+
+    loop = asyncio.get_event_loop()
+    data = loop.run_until_complete(run_tls_test(domain, typ, ipv4, ipv6, xmpps))
     tags = tag.pop_all()
     return data, tags
