@@ -18,7 +18,7 @@ import sys
 
 from tabulate import tabulate  # type: ignore
 
-from .clients import test_client_basic
+from .clients import basic_client_test
 from .constants import Check
 from .dns import dns_test
 from .socket import socket_test
@@ -64,9 +64,8 @@ def test() -> None:
     elif args.command == 'socket':
         data, tags = socket_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
     elif args.command == 'basic':
-        results = test_client_basic(args.domain, ipv4=args.ipv4, ipv6=args.ipv6)
-        #fieldnames = ['SRV', 'A/AAAA', 'IP', 'port', 'status']
-        print(list(results))
+        data, tags = basic_client_test(args.domain, typ=args.typ,
+                                       ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
 
     if args.format == 'table':
         print('###########')

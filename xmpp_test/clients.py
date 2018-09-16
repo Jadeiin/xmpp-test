@@ -12,6 +12,7 @@
 # <http://www.gnu.org/licenses/>.
 
 import asyncio
+from typing import Tuple
 
 from slixmpp.basexmpp import BaseXMPP  # type: ignore
 from slixmpp.clientxmpp import ClientXMPP  # type: ignore
@@ -19,8 +20,10 @@ from slixmpp.stanza import StreamFeatures  # type: ignore
 from slixmpp.xmlstream.handler import CoroutineCallback  # type: ignore
 from slixmpp.xmlstream.matcher import MatchXPath  # type: ignore
 
-#from .constants import SRV_XMPPS_CLIENT
-#from .dns import xmpp_client_records
+from .constants import Check
+from .tags import tag
+from .dns import gen_dns_records
+from .dns import XMPPTarget
 
 
 class ConnectClientBase(BaseXMPP):
@@ -79,27 +82,59 @@ class ConnectClientBase(BaseXMPP):
 
 
 class BasicConnectClient(ConnectClientBase):
-    pass
+    async def process(self, *, forever=True, timeout=None):
+        tasks = [asyncio.sleep(timeout)]
+        if not forever:
+            tasks.append(self.disconnected)
+        await asyncio.ensure_future(asyncio.wait(tasks))
 
 
-def test_client_basic(domain, ipv4=True, ipv6=True):
-    import logging
-    logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
+class BasicConnectTestResult:
+    target: XMPPTarget
+    success: bool
 
-    for typ, srv, host, addr, port in xmpp_client_records(domain, ipv4=ipv4, ipv6=ipv6):
+    def __init__(self, target: XMPPTarget, success: bool) -> None:
+        self.target = target
+        self.success = success
 
-        kwargs = {}
-        if typ == SRV_XMPPS_CLIENT:
-            kwargs['use_ssl'] = True
+    def as_dict(self) -> dict:
+        d = self.target.as_dict()
+        d['status'] = self.success
+        return d
 
-        client = BasicConnectClient(domain, addr, port)
-        client.connect(str(addr), port, **kwargs)
-        client.process(forever=False, timeout=10)
+    def tabulate(self) -> dict:
+        d = self.as_dict()
+        d['status'] = 'working' if d['status'] else 'failed'
+        return d
 
-        yield typ, addr, port, client._test_success
 
-    client = BasicConnectClient(domain, addr, port + 1)
-    client.connect(str(addr), port + 1, **kwargs)
-    client.process(forever=False, timeout=10)
+async def test_basic_target(domain: str, target: XMPPTarget) -> Tuple[XMPPTarget, bool]:
+    ip = str(target.ip)
+    port = target.srv.port
 
-    yield typ, addr, port + 1, client._test_success
+    kwargs = {
+        'use_ssl': target.is_xmpps,
+    }
+    client = BasicConnectClient(domain, ip, port)
+    client.connect(ip, port, **kwargs)
+    await client.process(forever=False, timeout=10)
+
+    return target, client._test_success
+
+
+async def run_basic_client_test(domain: str, typ: Check = Check.CLIENT,
+                                ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
+
+    futures = []
+    async for target in gen_dns_records(domain, typ, ipv4, ipv6, xmpps):
+        futures.append(asyncio.ensure_future(test_basic_target(domain, target)))
+    return [BasicConnectTestResult(t, s) for t, s in await asyncio.gather(*futures)]
+
+
+def basic_client_test(domain: str, typ: Check = Check.CLIENT,
+                      ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
+
+    loop = asyncio.get_event_loop()
+    data = loop.run_until_complete(run_basic_client_test(domain, typ, ipv4, ipv6, xmpps))
+    tags = tag.pop_all()
+    return data, tags

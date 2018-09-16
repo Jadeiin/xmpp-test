@@ -82,6 +82,10 @@ class SRVRecord:
     def __repr__(self) -> str:
         return '<SRVRecord: %s>' % self
 
+    @property
+    def is_xmpps(self) -> bool:
+        return self.service == SRV_TYPE.XMPPS_CLIENT.value or self.service == SRV_TYPE.XMPPS_SERVER.value
+
     async def resolve(self, ip4: bool = True, ip6: bool = True) -> AsyncGenerator['XMPPTarget', None]:
         """Resolve this SRV record to IPv4/IPv6 records in an asynchronous generator."""
 
@@ -143,6 +147,10 @@ class XMPPTarget:
 
     def __repr__(self) -> str:
         return '<XMPPTarget: %s>' % self
+
+    @property
+    def is_xmpps(self) -> bool:
+        return self.srv.is_xmpps
 
     def as_dict(self) -> dict:
         return collections.OrderedDict([
