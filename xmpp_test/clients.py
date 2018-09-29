@@ -87,7 +87,8 @@ class ConnectClientBase(BaseXMPP):
 
     def handle_connection_failed(self, exception):
         #print('connection failed', exception)
-        self.abort()
+        # Do not call abort(), it will trigger CancelledExceptions that are never retrieved
+        #self.abort()
         if not self.disconnected.cancelled():
             self.disconnected.set_result(True)
             self.disconnected = asyncio.Future()
