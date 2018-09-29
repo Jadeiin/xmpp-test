@@ -69,9 +69,9 @@ class ConnectClientBase(BaseXMPP):
         return self._test_host, str(self._test_address), self._test_port
 
     async def process(self, *, forever=True, timeout=None):
-        tasks = [asyncio.sleep(timeout)]
+        # TODO: We don't seem to need this, but experiment with a server that never answers
+        #tasks = [asyncio.sleep(timeout)]
 
-        # TODO: We don't seem to need this
         tasks = []
         if not forever:
             tasks.append(self.disconnected)
@@ -127,8 +127,8 @@ async def run_basic_client_test(domain: str, typ: Check = Check.CLIENT,
 def basic_client_test(domain: str, typ: Check = Check.CLIENT,
                       ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
 
-    import logging
-    logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
+    #import logging
+    #logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
 
     loop = asyncio.get_event_loop()
     data = loop.run_until_complete(run_basic_client_test(domain, typ, ipv4, ipv6, xmpps))
