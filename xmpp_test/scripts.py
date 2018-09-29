@@ -19,7 +19,7 @@ import sys
 from tabulate import tabulate  # type: ignore
 
 from .clients import basic_client_test
-from .clients import tls_test
+from .clients import tls_version_test
 from .constants import Check
 from .dns import dns_test
 from .socket import socket_test
@@ -63,7 +63,8 @@ def test() -> None:
         data, tags = basic_client_test(args.domain, typ=args.typ,
                                        ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
     elif args.command == 'tls_version':
-        data, tags = tls_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
+        data, tags = tls_version_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6,
+                                      xmpps=args.xmpps)
 
     if args.format == 'table':
         print('###########')
