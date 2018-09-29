@@ -24,7 +24,7 @@ def get_supported_protocols(exclude: List[TLS_VERSION] = None) -> List[TLS_VERSI
         exclude = []
 
     supported = []
-    for tls_version in TLS_VERSION:
+    for tls_version in reversed(TLS_VERSION):
         if tls_version in exclude:
             continue
 
@@ -37,4 +37,16 @@ def get_supported_protocols(exclude: List[TLS_VERSION] = None) -> List[TLS_VERSI
 
 def get_ciphers(tls_version: TLS_VERSION) -> List[str]:
     ctx = TLS_VERSION.get_context(tls_version)
-    return [p['protocol'] for p in ctx.get_ciphers()]
+    return [p['name'] for p in ctx.get_ciphers()]
+
+
+def get_protocol_ciphers():
+    duplicates = set()
+
+    for tls_version in get_supported_protocols():
+        for cipher in get_ciphers(tls_version):
+            if cipher in duplicates:
+                continue
+            duplicates.add(cipher)
+
+            yield tls_version, cipher

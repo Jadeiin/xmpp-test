@@ -20,6 +20,7 @@ from tabulate import tabulate  # type: ignore
 
 from .clients import basic_client_test
 from .clients import tls_version_test
+from .clients import tls_cipher_test
 from .constants import Check
 from .dns import dns_test
 from .socket import socket_test
@@ -52,6 +53,7 @@ def test() -> None:
     subparsers.add_parser('socket', parents=[domain_parser], help='Simple TCP socket connection test.')
     subparsers.add_parser('basic', parents=[domain_parser], help='Basic XMPP connection test.')
     subparsers.add_parser('tls_version', parents=[domain_parser], help='Test TLS protocol version support.')
+    subparsers.add_parser('tls_cipher', parents=[domain_parser], help='Test TLS cipher support.')
 
     args = parser.parse_args()
 
@@ -65,6 +67,11 @@ def test() -> None:
     elif args.command == 'tls_version':
         data, tags = tls_version_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6,
                                       xmpps=args.xmpps)
+    elif args.command == 'tls_cipher':
+        data, tags = tls_cipher_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6,
+                                     xmpps=args.xmpps)
+        print(len(data))
+        return
 
     if args.format == 'table':
         print('###########')

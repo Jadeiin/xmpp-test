@@ -27,6 +27,7 @@ from .tags import tag
 from .dns import gen_dns_records
 from .dns import XMPPTarget
 from .tls import get_supported_protocols
+from .tls import get_protocol_ciphers
 from .types import TLS_VERSION
 
 
@@ -167,20 +168,33 @@ class TLSTestClient(ConnectClientBase):
         pass  # TODO: Handle TLS cert
 
 
-class TLSTestResult(TestResult):
+class TLSVersionTestResult(TestResult):
     context: ssl.SSLContext
+    tls_version: TLS_VERSION
     starttls_required: bool
 
     def __init__(self, target: XMPPTarget, success: bool,
-                 context: ssl.SSLContext, starttls_required: bool) -> None:
+                 context: ssl.SSLContext, tls_version: TLS_VERSION, starttls_required: bool) -> None:
         super().__init__(target, success)
         self.context = context
+        self.tls_version = tls_version
         self.starttls_required = starttls_required
 
     def as_dict(self) -> dict:
         d = super().as_dict()
-        d['protocol'] = self.context.protocol.name[9:]
+        d['protocol'] = self.tls_version.name
         d['starttls_required'] = self.starttls_required
+        return d
+
+
+class TLSCipherTestResult(TLSVersionTestResult):
+    def __init__(self, *args, cipher: str, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cipher = cipher
+
+    def as_dict(self) -> dict:
+        d = super().as_dict()
+        d['cipher'] = self.cipher
         return d
 
 
@@ -197,8 +211,8 @@ async def test_tls_version(domain: str, target: XMPPTarget,
     client.connect(ip, port, **kwargs)
     await client.process(forever=False, timeout=10)
 
-    return TLSTestResult(target, client._test_success, context=context,
-                         starttls_required=client._test_starttls_required)
+    return TLSVersionTestResult(target, client._test_success, context=context, tls_version=tls_version,
+                                starttls_required=client._test_starttls_required)
 
 
 async def run_tls_version_test(domain: str, typ: Check = Check.CLIENT,
@@ -219,5 +233,48 @@ def tls_version_test(domain: str, typ: Check = Check.CLIENT,
 
     loop = asyncio.get_event_loop()
     data = loop.run_until_complete(run_tls_version_test(domain, typ, ipv4, ipv6, xmpps))
+    tags = tag.pop_all()
+    return data, tags
+
+
+async def test_tls_cipher(domain: str, target: XMPPTarget,
+                          tls_version: TLS_VERSION, cipher: str) -> Tuple[XMPPTarget, bool]:
+    ip = str(target.ip)
+    port = target.srv.port
+
+    kwargs = {
+        'use_ssl': target.is_xmpps,
+    }
+
+    context = TLS_VERSION.get_context(tls_version)
+    context.set_ciphers(cipher)
+
+    client = TLSTestClient(context, domain, ip, port)
+    client.connect(ip, port, **kwargs)
+    await client.process(forever=False, timeout=10)
+
+    return TLSCipherTestResult(target, client._test_success, context=context,
+                               tls_version=tls_version, cipher=cipher,
+                               starttls_required=client._test_starttls_required)
+
+
+async def run_tls_cipher_test(domain: str, typ: Check = Check.CLIENT,
+                              ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
+
+    futures = []
+    async for target in gen_dns_records(domain, typ, ipv4, ipv6, xmpps):
+        for tls_version, cipher in get_protocol_ciphers():
+            futures.append(asyncio.ensure_future(test_tls_cipher(domain, target, tls_version, cipher)))
+    return await asyncio.gather(*futures)
+
+
+def tls_cipher_test(domain: str, typ: Check = Check.CLIENT,
+                    ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
+
+    #import logging
+    #logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
+
+    loop = asyncio.get_event_loop()
+    data = loop.run_until_complete(run_tls_cipher_test(domain, typ, ipv4, ipv6, xmpps))
     tags = tag.pop_all()
     return data, tags
