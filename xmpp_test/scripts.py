@@ -58,7 +58,7 @@ def test() -> None:
         'basic', help='Basic XMPP connection test.')
     test_socket.add_argument('domain', help="The domain to test.")
 
-    test_tls = subparsers.add_parser('tls', help='Test TLS cipher suites.')
+    test_tls = subparsers.add_parser('tls_version', help='Test TLS protocol version support.')
     test_tls.add_argument('domain', help="The domain to test.")
 
     args = parser.parse_args()
@@ -70,7 +70,7 @@ def test() -> None:
     elif args.command == 'basic':
         data, tags = basic_client_test(args.domain, typ=args.typ,
                                        ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
-    elif args.command == 'tls':
+    elif args.command == 'tls_version':
         data, tags = tls_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
 
     if args.format == 'table':
