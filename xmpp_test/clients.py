@@ -201,8 +201,8 @@ async def test_tls_version(domain: str, target: XMPPTarget,
                          starttls_required=client._test_starttls_required)
 
 
-async def run_tls_test(domain: str, typ: Check = Check.CLIENT,
-                       ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
+async def run_tls_version_test(domain: str, typ: Check = Check.CLIENT,
+                               ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
 
     futures = []
     async for target in gen_dns_records(domain, typ, ipv4, ipv6, xmpps):
@@ -211,13 +211,13 @@ async def run_tls_test(domain: str, typ: Check = Check.CLIENT,
     return await asyncio.gather(*futures)
 
 
-def tls_test(domain: str, typ: Check = Check.CLIENT,
-             ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
+def tls_version_test(domain: str, typ: Check = Check.CLIENT,
+                     ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
 
     import logging
     logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
 
     loop = asyncio.get_event_loop()
-    data = loop.run_until_complete(run_tls_test(domain, typ, ipv4, ipv6, xmpps))
+    data = loop.run_until_complete(run_tls_version_test(domain, typ, ipv4, ipv6, xmpps))
     tags = tag.pop_all()
     return data, tags
