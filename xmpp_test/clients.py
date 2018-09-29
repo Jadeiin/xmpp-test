@@ -228,9 +228,6 @@ async def run_tls_version_test(domain: str, typ: Check = Check.CLIENT,
 def tls_version_test(domain: str, typ: Check = Check.CLIENT,
                      ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
 
-    import logging
-    logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
-
     loop = asyncio.get_event_loop()
     data = loop.run_until_complete(run_tls_version_test(domain, typ, ipv4, ipv6, xmpps))
     tags = tag.pop_all()
@@ -270,9 +267,6 @@ async def run_tls_cipher_test(domain: str, typ: Check = Check.CLIENT,
 
 def tls_cipher_test(domain: str, typ: Check = Check.CLIENT,
                     ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
-
-    #import logging
-    #logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
 
     loop = asyncio.get_event_loop()
     data = loop.run_until_complete(run_tls_cipher_test(domain, typ, ipv4, ipv6, xmpps))

@@ -70,8 +70,6 @@ def test() -> None:
     elif args.command == 'tls_cipher':
         data, tags = tls_cipher_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6,
                                      xmpps=args.xmpps)
-        print(len(data))
-        return
 
     if args.format == 'table':
         print('###########')
