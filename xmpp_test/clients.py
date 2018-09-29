@@ -26,6 +26,8 @@ from .constants import Check
 from .tags import tag
 from .dns import gen_dns_records
 from .dns import XMPPTarget
+from .tls import get_supported_protocols
+from .types import TLS_VERSION
 
 
 class ConnectClientBase(BaseXMPP):
@@ -182,22 +184,15 @@ class TLSTestResult(TestResult):
         return d
 
 
-def tls_context():
-    protocols = ['TLSv1_3', 'TLSv1_2', 'TLSv1_1', 'TLSv1', 'SSLv3', 'SSLv2']
-    for protocol in protocols:
-        proto = getattr(ssl, 'PROTOCOL_%s' % protocol, None)
-        if proto is not None:
-            yield ssl.SSLContext(protocol=proto)
-
-
-async def test_tls_target(domain: str, target: XMPPTarget,
-                          context: ssl.SSLContext) -> Tuple[XMPPTarget, bool]:
+async def test_tls_version(domain: str, target: XMPPTarget,
+                           tls_version: TLS_VERSION) -> Tuple[XMPPTarget, bool]:
     ip = str(target.ip)
     port = target.srv.port
 
     kwargs = {
         'use_ssl': target.is_xmpps,
     }
+    context = TLS_VERSION.get_context(tls_version)
     client = TLSTestClient(context, domain, ip, port)
     client.connect(ip, port, **kwargs)
     await client.process(forever=False, timeout=10)
@@ -211,8 +206,8 @@ async def run_tls_test(domain: str, typ: Check = Check.CLIENT,
 
     futures = []
     async for target in gen_dns_records(domain, typ, ipv4, ipv6, xmpps):
-        for context in tls_context():
-            futures.append(asyncio.ensure_future(test_tls_target(domain, target, context)))
+        for tls_version in get_supported_protocols():
+            futures.append(asyncio.ensure_future(test_tls_version(domain, target, tls_version)))
     return await asyncio.gather(*futures)
 
 
