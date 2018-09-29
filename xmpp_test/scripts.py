@@ -48,18 +48,10 @@ def test() -> None:
 
     subparsers = parser.add_subparsers(help='Commands', dest='command')
 
-    subparsers.add_parser('dns', help="Test DNS records for this domain.", parents=[domain_parser])
-
-    test_socket = subparsers.add_parser(
-        'socket', help='Test a domain by doing a simple socket connection to each DNS entry.')
-    test_socket.add_argument('domain', help="The domain to test.")
-
-    test_socket = subparsers.add_parser(
-        'basic', help='Basic XMPP connection test.')
-    test_socket.add_argument('domain', help="The domain to test.")
-
-    test_tls = subparsers.add_parser('tls_version', help='Test TLS protocol version support.')
-    test_tls.add_argument('domain', help="The domain to test.")
+    subparsers.add_parser('dns', parents=[domain_parser], help='Test DNS records for this domain.')
+    subparsers.add_parser('socket', parents=[domain_parser], help='Simple TCP socket connection test.')
+    subparsers.add_parser('basic', parents=[domain_parser], help='Basic XMPP connection test.')
+    subparsers.add_parser('tls_version', parents=[domain_parser], help='Test TLS protocol version support.')
 
     args = parser.parse_args()
 
