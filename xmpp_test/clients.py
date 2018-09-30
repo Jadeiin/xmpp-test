@@ -89,6 +89,13 @@ class ConnectClientBase(BaseXMPP):
         #print('connection failed', exception)
         # Do not call abort(), it will trigger CancelledExceptions that are never retrieved
         #self.abort()
+        #self.cancel_connection_attempt()
+
+        # Also try this again if a test never terminates
+        #if self.transport:
+        #    self.transport.close()
+        #    self.transport.abort()
+
         if not self.disconnected.cancelled():
             self.disconnected.set_result(True)
             self.disconnected = asyncio.Future()
@@ -268,6 +275,9 @@ async def run_tls_cipher_test(domain: str, typ: Check = Check.CLIENT,
 
 def tls_cipher_test(domain: str, typ: Check = Check.CLIENT,
                     ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
+
+    #import logging
+    #logging.basicConfig(level=logging.ERROR, format='%(levelname)-8s %(name)s %(message)s')
 
     loop = asyncio.get_event_loop()
     data = loop.run_until_complete(run_tls_cipher_test(domain, typ, ipv4, ipv6, xmpps))
