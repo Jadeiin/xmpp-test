@@ -12,6 +12,7 @@ Welcome to xmpp-test's documentation!
 
    api/dns
    api/socket
+   api/types
 
 
 Indices and tables

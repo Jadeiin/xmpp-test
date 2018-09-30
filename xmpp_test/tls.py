@@ -24,6 +24,7 @@ def get_supported_protocols(exclude: List[TLS_VERSION] = None) -> List[TLS_VERSI
         exclude = []
 
     supported = []
+#    return [TLS_VERSION.TLSv1_2]
     for tls_version in reversed(TLS_VERSION):
         if tls_version in exclude:
             continue
@@ -37,6 +38,7 @@ def get_supported_protocols(exclude: List[TLS_VERSION] = None) -> List[TLS_VERSI
 
 def get_ciphers(tls_version: TLS_VERSION) -> List[str]:
     ctx = TLS_VERSION.get_context(tls_version)
+#    return ['ECDHE-ECDSA-CAMELLIA256-SHA384']
     return [p['name'] for p in ctx.get_ciphers()]
 
 
