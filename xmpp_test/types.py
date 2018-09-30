@@ -37,3 +37,19 @@ class TLS_VERSION(Enum):
 
     def get_context(tls_version: 'TLS_VERSION') -> ssl.SSLContext:
         return ssl.SSLContext(TLS_VERSION.get_protocol_constant(tls_version))
+
+
+class STARTTLS(Enum):
+    """Used for describing STARTTLS support of a connection."""
+
+    not_applicable: int = 0
+    """STARTTLS support is not applicable (e.g. XMPPS or websocket connections)."""
+
+    no: int = 1
+    """STARTTLS is not supported."""
+
+    optional: int = 2
+    """Supports STARTTLS, but it's not required."""
+
+    required: int = 3
+    """STARTTLS is required."""
