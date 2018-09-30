@@ -19,6 +19,7 @@ from typing import AsyncGenerator
 import aiodns  # type: ignore
 
 from .base import XMPPTarget
+from .base import Test
 from .base import TestResult
 from .constants import Check
 from .constants import SRV_TYPE
@@ -144,6 +145,17 @@ async def srv_records(service: SRV_TYPE, domain: str) -> List[SRVRecord]:
         ttl=r.ttl, priority=r.priority, weight=r.weight,
         port=r.port, target=r.host
     ) for r in results]
+
+
+class XMPPTargetTest(Test):
+    async def run(self, domain: str, typ: Check = Check.CLIENT,
+                  ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
+
+        futures = []
+        async for target in gen_dns_records(domain, typ, ipv4, ipv6, xmpps):
+            for test_kwargs in self.get_tests(domain, target):
+                futures.append(asyncio.ensure_future(self.target_test(domain, target, **test_kwargs)))
+        return await asyncio.gather(*futures)
 
 
 class DNSTestResult(TestResult):

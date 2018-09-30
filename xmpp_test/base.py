@@ -11,11 +11,15 @@
 # You should have received a copy of the GNU General Public License along with xmpp-test.  If not, see
 # <http://www.gnu.org/licenses/>.
 
+import asyncio
 import collections
 from typing import Union
 from ipaddress import IPv4Address
 from ipaddress import IPv6Address
 from ipaddress import ip_address
+
+from .constants import Check
+from .tags import tag
 
 
 class XMPPTarget:
@@ -41,6 +45,23 @@ class XMPPTarget:
         """Wether or not this test uses XEP-0368 style XMPPS."""
 
         return self.srv.is_xmpps
+
+
+class Test:
+    def __init__(self, args=None, kwargs=None):
+        self.loop = asyncio.get_event_loop()
+
+        self.args = args or tuple()
+        self.kwargs = kwargs or dict()
+
+    def test(self, *args, **kwargs):  # equivalent to start
+        data = self.loop.run_until_complete(self.run(*args, **kwargs))
+        tags = tag.pop_all()
+        return data, tags
+
+    async def run(self, *args, **kwargs):
+        """To be implemented."""
+        pass
 
 
 class TestResult:
