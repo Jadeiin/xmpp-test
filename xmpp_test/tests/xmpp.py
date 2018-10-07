@@ -11,17 +11,13 @@
 # You should have received a copy of the GNU General Public License along with xmpp-test.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-import asyncio
 import ssl
-from typing import Tuple
 
 from ..base import TestResult
 from ..base import XMPPTarget
 from ..base import XMPPTargetTest
 from ..clients import BasicConnectClient
 from ..clients import TLSTestClient
-from ..constants import Check
-from ..tags import tag
 from ..tls import get_protocol_ciphers
 from ..tls import get_supported_protocols
 from ..types import TLS_VERSION
