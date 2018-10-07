@@ -23,8 +23,8 @@ from typing import Union
 
 import aiodns
 
-from .constants import Check
 from .constants import SRV_TYPE
+from .constants import Check
 from .tags import tag
 
 
