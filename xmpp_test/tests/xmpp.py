@@ -21,10 +21,25 @@ from ..clients import TLSTestClient
 from ..tls import get_protocol_ciphers
 from ..tls import get_supported_protocols
 from ..types import TLS_VERSION
+from ..types import STARTTLS
 
 
 class BasicConnectTestResult(TestResult):
-    pass
+    starttls_required: STARTTLS
+
+    def __init__(self, target: XMPPTarget, success: bool, starttls_required: STARTTLS) -> None:
+        super().__init__(target, success)
+        self.starttls_required = starttls_required
+
+    def as_dict(self) -> dict:
+        d = super().as_dict()
+        d['starttls'] = self.starttls_required
+        return d
+
+    def tabulate(self) -> dict:
+        d = super().tabulate()
+        d['starttls'] = d['starttls'].name
+        return d
 
 
 class BasicConnectTest(XMPPTargetTest):
@@ -39,25 +54,22 @@ class BasicConnectTest(XMPPTargetTest):
         client.connect(ip, port, **kwargs)
         await client.process(forever=False, timeout=10)
 
-        return BasicConnectTestResult(target, client._test_success)
+        return BasicConnectTestResult(target, client._test_success, client.starttls_required)
 
 
-class TLSVersionTestResult(TestResult):
+class TLSVersionTestResult(BasicConnectTestResult):
     context: ssl.SSLContext
     tls_version: TLS_VERSION
-    starttls_required: bool
 
     def __init__(self, target: XMPPTarget, success: bool,
-                 context: ssl.SSLContext, tls_version: TLS_VERSION, starttls_required: bool) -> None:
-        super().__init__(target, success)
+                 starttls_required: STARTTLS, context: ssl.SSLContext, tls_version: TLS_VERSION) -> None:
+        super().__init__(target, success, starttls_required=starttls_required)
         self.context = context
         self.tls_version = tls_version
-        self.starttls_required = starttls_required
 
     def as_dict(self) -> dict:
         d = super().as_dict()
         d['protocol'] = self.tls_version.name
-        d['starttls_required'] = self.starttls_required
         return d
 
 
@@ -79,7 +91,7 @@ class TLSVersionTest(XMPPTargetTest):
         await client.process(forever=False, timeout=10)
 
         return TLSVersionTestResult(target, client._test_success, context=context, tls_version=tls_version,
-                                    starttls_required=client._test_starttls_required)
+                                    starttls_required=client.starttls_required)
 
 
 class TLSCipherTestResult(TLSVersionTestResult):
@@ -116,4 +128,4 @@ class TLSCipherTest(XMPPTargetTest):
 
         return TLSCipherTestResult(target, client._test_success, context=context,
                                    tls_version=tls_version, cipher=cipher,
-                                   starttls_required=client._test_starttls_required)
+                                   starttls_required=client.starttls_required)

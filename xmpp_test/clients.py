@@ -19,6 +19,8 @@ from slixmpp.stanza import StreamFeatures  # type: ignore
 from slixmpp.xmlstream.handler import CoroutineCallback  # type: ignore
 from slixmpp.xmlstream.matcher import MatchXPath  # type: ignore
 
+from .types import STARTTLS
+
 
 class ConnectClientBase(BaseXMPP):
     def __init__(self, host, address, port, *args, **kwargs):
@@ -26,6 +28,7 @@ class ConnectClientBase(BaseXMPP):
         self._test_address = address
         self._test_port = port
         self._test_success = False
+        self._test_starttls_required = None
 
         super().__init__(*args, **kwargs)
         self.stream_header = "<stream:stream to='%s' %s %s %s %s>" % (
@@ -51,11 +54,23 @@ class ConnectClientBase(BaseXMPP):
         self.add_event_handler('session_end', self.handle_stream_end)
         self.add_event_handler('connection_failed', self.handle_connection_failed)
 
+        self.register_handler(
+            CoroutineCallback('Stream Features for TLS',
+                              MatchXPath('{%s}features' % self.stream_ns),
+                              self._tls_stream_features))
+
     _handle_stream_features = ClientXMPP._handle_stream_features
     register_feature = ClientXMPP.register_feature
 
     async def pick_dns_answer(self, default_domain):
         return self._test_host, str(self._test_address), self._test_port
+
+    async def _tls_stream_features(self, features):
+        # NOTE: yes, that dict-lookup is correct, features['starttls'] always works
+        if 'starttls' in features['features']:
+            stanza = features['starttls']
+            query = '{%s}required' % stanza.namespace
+            self._test_starttls_required = stanza.xml.find(query) is not None
 
     async def process(self, *, forever=True, timeout=None):
         # TODO: We don't seem to need this, but experiment with a server that never answers
@@ -89,6 +104,20 @@ class ConnectClientBase(BaseXMPP):
             self.disconnected.set_result(True)
             self.disconnected = asyncio.Future()
 
+    @property
+    def starttls_required(self):
+        if not self._test_success:
+            return STARTTLS.unknown
+        elif self.use_ssl:
+            return STARTTLS.not_applicable
+        elif self._test_starttls_required is None:
+            return STARTTLS.no
+        elif self._test_starttls_required is False:
+            return STARTTLS.optional
+        elif self._test_starttls_required is True:
+            return STARTTLS.required
+        return STARTTLS.unknown
+
 
 class BasicConnectClient(ConnectClientBase):
     pass
@@ -99,23 +128,11 @@ class TLSTestClient(ConnectClientBase):
         super().__init__(*args, **kwargs)
 
         self._test_ssl_context = ssl_context
-        self._test_starttls_required = False
 
         self.add_event_handler('ssl_cert', self.handle_ssl_cert)
-        self.register_handler(
-            CoroutineCallback('Stream Features for TLS',
-                              MatchXPath('{%s}features' % self.stream_ns),
-                              self._tls_stream_features))
 
     def get_ssl_context(self):
         return self._test_ssl_context
-
-    async def _tls_stream_features(self, features):
-        # NOTE: yes, that dict-lookup is correct, features['starttls'] always works
-        if 'starttls' in features['features']:
-            stanza = features['starttls']
-            query = '{%s}required' % stanza.namespace
-            self._test_starttls_required = stanza.xml.find(query) is not None
 
     def handle_stream_negotiated(self, *args, **kwargs):
         self._test_success = True
