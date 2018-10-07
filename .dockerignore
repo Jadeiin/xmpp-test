@@ -1,0 +1,10 @@
+**/*.py[co]
+**/*.sw[a-z]
+**/__pycache__
+/.git/
+/bin/
+/docs/
+/include/
+/lib/
+/py2/
+/share/
