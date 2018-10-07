@@ -14,6 +14,11 @@
 import ssl
 from enum import Enum
 
+from .constants import STARTTLS_NOT_SUPPORTED
+from .constants import STARTTLS_OPTIONAL
+from .constants import STARTTLS_REQUIRED
+from .constants import STARTTLS_NOT_APPLICABLE
+
 
 class TLS_VERSION(Enum):
     """Enum for different TLS versions.
@@ -42,14 +47,14 @@ class TLS_VERSION(Enum):
 class STARTTLS(Enum):
     """Used for describing STARTTLS support of a connection."""
 
-    not_applicable: int = 0
+    not_applicable: int = STARTTLS_NOT_APPLICABLE
     """STARTTLS support is not applicable (e.g. XMPPS or websocket connections)."""
 
-    no: int = 1
+    no: int = STARTTLS_NOT_SUPPORTED
     """STARTTLS is not supported."""
 
-    optional: int = 2
+    optional: int = STARTTLS_OPTIONAL
     """Supports STARTTLS, but it's not required."""
 
-    required: int = 3
+    required: int = STARTTLS_REQUIRED
     """STARTTLS is required."""
