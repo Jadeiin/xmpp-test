@@ -41,6 +41,11 @@ class BasicConnectTestResult(TestResult):
         d['starttls'] = d['starttls'].name
         return d
 
+    def json(self) -> dict:
+        d = super().json()
+        d['starttls'] = d['starttls'].value
+        return d
+
 
 class BasicConnectTest(XMPPTargetTest):
     async def target_test(self, target: XMPPTarget) -> BasicConnectTestResult:

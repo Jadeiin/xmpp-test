@@ -88,7 +88,7 @@ def test() -> None:
             print(tabulate([t.as_dict() for t in tags], headers='keys'))
 
     elif args.format == 'csv':
-        data = [d.as_dict() for d in data]
+        data = [d.tabulate() if hasattr(d, 'tabulate') else d.as_dict() for d in data]
         if data:
             writer = csv.DictWriter(sys.stdout, delimiter=',', fieldnames=data[0].keys())
             writer.writeheader()
@@ -97,6 +97,6 @@ def test() -> None:
 
     elif args.format == 'json':
         print(json.dumps({
-            'data': [d.as_dict() for d in data],
+            'data': [d.json() for d in data],
             'tags': [t.as_dict() for t in tags],
         }, indent=4))

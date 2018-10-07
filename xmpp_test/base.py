@@ -285,3 +285,6 @@ class TestResult:
         d = self.as_dict()
         d['status'] = 'working' if d.pop('success') else 'failed'
         return d
+
+    def json(self):
+        return self.as_dict()
