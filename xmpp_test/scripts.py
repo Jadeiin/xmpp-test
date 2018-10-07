@@ -18,12 +18,12 @@ import sys
 
 from tabulate import tabulate  # type: ignore
 
-from .clients import basic_client_test
-from .clients import tls_version_test
-from .clients import tls_cipher_test
 from .constants import Check
-from .dns import dns_test
-from .socket import socket_test
+from .tests.dns import DNSTest
+from .tests.socket import SocketTest
+from .tests.xmpp import BasicConnectTest
+from .tests.xmpp import TLSCipherTest
+from .tests.xmpp import TLSVersionTest
 
 
 def test() -> None:
@@ -58,18 +58,17 @@ def test() -> None:
     args = parser.parse_args()
 
     if args.command == 'dns':
-        data, tags = dns_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
+        test = DNSTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
     elif args.command == 'socket':
-        data, tags = socket_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
+        test = SocketTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
     elif args.command == 'basic':
-        data, tags = basic_client_test(args.domain, typ=args.typ,
-                                       ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
+        test = BasicConnectTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
     elif args.command == 'tls_version':
-        data, tags = tls_version_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6,
-                                      xmpps=args.xmpps)
+        test = TLSVersionTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
     elif args.command == 'tls_cipher':
-        data, tags = tls_cipher_test(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6,
-                                     xmpps=args.xmpps)
+        test = TLSCipherTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
+
+    data, tags = test.start()
 
     if args.format == 'table':
         print('###########')

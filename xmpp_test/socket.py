@@ -17,9 +17,9 @@ from typing import List
 from typing import Tuple
 
 from .constants import Check
-from .dns import gen_dns_records
+#from .dns import gen_dns_records
 from .tags import tag
-from .dns import XMPPTarget
+from .base import XMPPTarget
 from .base import TestResult
 
 
