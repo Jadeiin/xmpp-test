@@ -227,6 +227,11 @@ class Test:
         tags = tag.pop_all()
         return data, tags
 
+    async def aio_start(self):
+        data = await self.run(*self.args, **self.kwargs)
+        tags = tag.pop_all()
+        return data, tags
+
     async def run(self, *args, **kwargs):
         """To be implemented."""
         pass
