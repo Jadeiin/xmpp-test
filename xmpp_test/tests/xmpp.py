@@ -79,7 +79,7 @@ class TLSVersionTestResult(BasicConnectTestResult):
 
 
 class TLSVersionTest(XMPPTargetTest):
-    def get_tests(self, domain, target):
+    async def get_tests(self, domain, target):
         for tls_version in get_supported_protocols():
             yield {'tls_version': tls_version}
 
@@ -111,8 +111,8 @@ class TLSCipherTestResult(TLSVersionTestResult):
 
 
 class TLSCipherTest(XMPPTargetTest):
-    def get_tests(self, domain, target):
-        for tls_version, cipher in get_protocol_ciphers():
+    async def get_tests(self, domain, target):
+        async for tls_version, cipher in get_protocol_ciphers():
             yield {'tls_version': tls_version, 'cipher': cipher}
 
     async def target_test(self, target: XMPPTarget, tls_version: TLS_VERSION,

@@ -11,6 +11,7 @@
 # You should have received a copy of the GNU General Public License along with xmpp-test.  If not, see
 # <http://www.gnu.org/licenses/>.
 
+import asyncio
 import ssl
 from typing import List
 
@@ -36,17 +37,27 @@ def get_supported_protocols(exclude: List[TLS_VERSION] = None) -> List[TLS_VERSI
     return supported
 
 
-def get_ciphers(tls_version: TLS_VERSION) -> List[str]:
+async def get_ciphers(tls_version: TLS_VERSION) -> List[str]:
     ctx = TLS_VERSION.get_context(tls_version)
 #    return ['ECDHE-ECDSA-CAMELLIA256-SHA384']
-    return [p['name'] for p in ctx.get_ciphers()]
+    if hasattr(ctx, 'get_ciphers') and False:
+        ciphers = [p['name'] for p in ctx.get_ciphers()]
+    else:
+        create = asyncio.create_subprocess_exec('openssl', 'ciphers', 'ALL:!SRP:!PSK',
+                                                stdout=asyncio.subprocess.PIPE)
+        proc = await create
+        ciphers = await proc.stdout.read()
+        ciphers = ciphers.strip().decode('utf-8').split(':')
+
+    for c in ciphers:
+        yield c
 
 
-def get_protocol_ciphers():
+async def get_protocol_ciphers():
     duplicates = set()
 
     for tls_version in get_supported_protocols():
-        for cipher in get_ciphers(tls_version):
+        async for cipher in get_ciphers(tls_version):
             if cipher in duplicates:
                 continue
             duplicates.add(cipher)
