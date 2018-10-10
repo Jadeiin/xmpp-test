@@ -19,6 +19,7 @@ import sys
 from tabulate import tabulate  # type: ignore
 
 from .constants import Check
+from .server import run_server
 from .tests.dns import DNSTest
 from .tests.socket import SocketTest
 from .tests.xmpp import BasicConnectTest
@@ -54,6 +55,7 @@ def test() -> None:
     subparsers.add_parser('basic', parents=[domain_parser], help='Basic XMPP connection test.')
     subparsers.add_parser('tls_version', parents=[domain_parser], help='Test TLS protocol version support.')
     subparsers.add_parser('tls_cipher', parents=[domain_parser], help='Test TLS cipher support.')
+    subparsers.add_parser('http-server', help='Start HTTP server serving tests.')
 
     args = parser.parse_args()
 
@@ -67,6 +69,9 @@ def test() -> None:
         test = TLSVersionTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
     elif args.command == 'tls_cipher':
         test = TLSCipherTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
+    elif args.command == 'http-server':
+        run_server()
+        return
 
     data, tags = test.start()
 
