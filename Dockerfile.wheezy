@@ -1,0 +1,10 @@
+FROM mathiasertl/python:3.6-wheezy
+WORKDIR /usr/src/xmpp-test
+
+ADD requirements.txt xmpp-test.py ./
+ADD xmpp_test xmpp_test/
+
+RUN apt-get install gcc
+RUN pip install --no-cache-dir -r requirements.txt
+
+CMD python3 xmpp-test.py http-server
