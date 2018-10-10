@@ -23,11 +23,6 @@ from .tests.xmpp import TLSCipherTest
 from .tests.xmpp import TLSVersionTest
 
 
-_ipv4 = None
-_ipv6 = None
-_xmpps = None
-
-
 class JsonApiView(web.View):
     async def post(self):
         print(dir(self))
@@ -47,10 +42,9 @@ class TestView(JsonApiView):
         domain = request_data['domain']
         typ = self.get_check_type(request_data.get('typ', 'client'))
 
-        print(_ipv4, request_data.get('ipv4', True))
-        ipv4 = _ipv4 and request_data.get('ipv4', True)
-        ipv6 = _ipv6 and request_data.get('ipv6', True)
-        xmpps = _xmpps and request_data.get('xmpps', True)
+        ipv4 = self.request.app['ipv4'] and request_data.get('ipv4', True)
+        ipv6 = self.request.app['ipv6'] and request_data.get('ipv6', True)
+        xmpps = self.request.app['xmpps'] and request_data.get('xmpps', True)
 
         if test_name == 'dns':
             test = DNSTest(domain, typ=typ, ipv4=ipv4, ipv6=ipv6, xmpps=xmpps)
@@ -74,12 +68,11 @@ class TestView(JsonApiView):
 
 
 def run_server(ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> None:
-    global _ipv4, _ipv6, _xmpps
-    _ipv4 = ipv4
-    _ipv6 = ipv6
-    _xmpps = xmpps
-
     app = web.Application()
+    app['ipv4'] = ipv4
+    app['ipv6'] = ipv6
+    app['xmpps'] = xmpps
+
     app.add_routes([web.post('/test/{test}/', TestView)])
 
     web.run_app(app)
