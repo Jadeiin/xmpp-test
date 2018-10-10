@@ -70,7 +70,7 @@ def test() -> None:
     elif args.command == 'tls_cipher':
         test = TLSCipherTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
     elif args.command == 'http-server':
-        run_server()
+        run_server(ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
         return
 
     data, tags = test.start()
