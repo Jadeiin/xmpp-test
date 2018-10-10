@@ -43,7 +43,7 @@ async def get_ciphers(tls_version: TLS_VERSION) -> List[str]:
     if hasattr(ctx, 'get_ciphers') and False:
         ciphers = [p['name'] for p in ctx.get_ciphers()]
     else:
-        create = asyncio.create_subprocess_exec('openssl', 'ciphers', 'ALL:!SRP:!PSK',
+        create = asyncio.create_subprocess_exec('openssl', 'ciphers', 'ALL:!aNULL:!SRP:!PSK',
                                                 stdout=asyncio.subprocess.PIPE)
         proc = await create
         ciphers = await proc.stdout.read()
