@@ -55,7 +55,11 @@ def test() -> None:
     subparsers.add_parser('basic', parents=[domain_parser], help='Basic XMPP connection test.')
     subparsers.add_parser('tls_version', parents=[domain_parser], help='Test TLS protocol version support.')
     subparsers.add_parser('tls_cipher', parents=[domain_parser], help='Test TLS cipher support.')
-    subparsers.add_parser('http-server', help='Start HTTP server serving tests.')
+    server_parser = subparsers.add_parser('http-server', help='Start HTTP server serving tests.')
+    server_parser.add_argument(
+        '--host', action='append',
+        help='Host interfaces to listen on, defaults to "0.0.0.0". Can be given multiple times.')
+    server_parser.add_argument('--port')
 
     args = parser.parse_args()
 
@@ -70,7 +74,7 @@ def test() -> None:
     elif args.command == 'tls_cipher':
         test = TLSCipherTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
     elif args.command == 'http-server':
-        run_server(ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
+        run_server(ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps, host=args.host, port=args.port)
         return
 
     data, tags = test.start()

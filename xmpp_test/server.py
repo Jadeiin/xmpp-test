@@ -67,7 +67,8 @@ class TestView(JsonApiView):
         }
 
 
-def run_server(ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> None:
+def run_server(ipv4: bool = True, ipv6: bool = True, xmpps: bool = True,
+               host: str = '0.0.0.0', port: int = None) -> None:
     app = web.Application()
     app['ipv4'] = ipv4
     app['ipv6'] = ipv6
@@ -75,4 +76,4 @@ def run_server(ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> None
 
     app.add_routes([web.post('/test/{test}/', TestView)])
 
-    web.run_app(app)
+    web.run_app(app, host=host, port=port)
