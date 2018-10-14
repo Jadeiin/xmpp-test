@@ -25,6 +25,7 @@ from .tests.socket import SocketTest
 from .tests.xmpp import BasicConnectTest
 from .tests.xmpp import TLSCipherTest
 from .tests.xmpp import TLSVersionTest
+from .tests.tls import TLSSupportedTest
 
 
 def test() -> None:
@@ -61,6 +62,10 @@ def test() -> None:
         help='Host interfaces to listen on, defaults to "0.0.0.0". Can be given multiple times.')
     server_parser.add_argument('--port')
 
+    info_parser = subparsers.add_parser('info',
+                                        help='Print info on what TLS/SSL versions and ciphers are supported.')
+    info_parser.add_argument('what', choices=['version', 'cipher'])
+
     args = parser.parse_args()
 
     if args.command == 'dns':
@@ -73,6 +78,11 @@ def test() -> None:
         test = TLSVersionTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
     elif args.command == 'tls_cipher':
         test = TLSCipherTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
+
+    elif args.command == 'info':
+        test = TLSSupportedTest(what=args.what)
+
+    # commands that don't start a test
     elif args.command == 'http-server':
         run_server(ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps, host=args.host, port=args.port)
         return
