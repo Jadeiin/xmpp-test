@@ -26,11 +26,16 @@ from .tests.xmpp import BasicConnectTest
 from .tests.xmpp import TLSCipherTest
 from .tests.xmpp import TLSVersionTest
 from .tests.tls import TLSSupportedTest
+from .types import TLS_VERSION
 
 
 def test() -> None:
     domain_parser = argparse.ArgumentParser(add_help=False)
     domain_parser.add_argument('domain', help="The domain to test.")
+
+    protocol_parser = argparse.ArgumentParser(add_help=False)
+    # TODO: add include option
+    protocol_parser.add_argument('--exclude-protocol', action='append')  # TODO: choices, help
 
     parser = argparse.ArgumentParser()
     typ_group = parser.add_mutually_exclusive_group()
@@ -54,7 +59,8 @@ def test() -> None:
     subparsers.add_parser('dns', parents=[domain_parser], help='Test DNS records for this domain.')
     subparsers.add_parser('socket', parents=[domain_parser], help='Simple TCP socket connection test.')
     subparsers.add_parser('basic', parents=[domain_parser], help='Basic XMPP connection test.')
-    subparsers.add_parser('tls_version', parents=[domain_parser], help='Test TLS protocol version support.')
+    subparsers.add_parser('tls_version', parents=[domain_parser, protocol_parser],
+                          help='Test TLS protocol version support.')
     subparsers.add_parser('tls_cipher', parents=[domain_parser], help='Test TLS cipher support.')
     server_parser = subparsers.add_parser('http-server', help='Start HTTP server serving tests.')
     server_parser.add_argument(
@@ -75,7 +81,9 @@ def test() -> None:
     elif args.command == 'basic':
         test = BasicConnectTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
     elif args.command == 'tls_version':
-        test = TLSVersionTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
+        exclude_protocols = [getattr(TLS_VERSION, p) for p in args.exclude_protocol]
+        test = TLSVersionTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps,
+                              exclude=exclude_protocols)
     elif args.command == 'tls_cipher':
         test = TLSCipherTest(args.domain, typ=args.typ, ipv4=args.ipv4, ipv6=args.ipv6, xmpps=args.xmpps)
 

@@ -79,8 +79,8 @@ class TLSVersionTestResult(BasicConnectTestResult):
 
 
 class TLSVersionTest(XMPPTargetTest):
-    async def get_tests(self, domain, target):
-        for tls_version in get_supported_protocols():
+    async def get_tests(self, domain, target, exclude=None):
+        for tls_version in get_supported_protocols(exclude=exclude):
             yield {'tls_version': tls_version}
 
     async def target_test(self, target: XMPPTarget, tls_version: TLS_VERSION) -> TLSVersionTestResult:
