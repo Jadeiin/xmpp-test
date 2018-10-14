@@ -18,6 +18,7 @@ from aiohttp import web
 from .constants import Check
 from .tests.dns import DNSTest
 from .tests.socket import SocketTest
+from .tests.tls import TLSSupportedTest
 from .tests.xmpp import BasicConnectTest
 from .tests.xmpp import TLSCipherTest
 from .tests.xmpp import TLSVersionTest
@@ -67,6 +68,16 @@ class TestView(JsonApiView):
         }
 
 
+class InfoView(web.View):
+    async def get(self):
+        what = self.request.match_info['what']
+
+        test = TLSSupportedTest(what=what)
+        data, tags = await test.aio_start()
+
+        return web.json_response([d.json() for d in data])
+
+
 def run_server(ipv4: bool = True, ipv6: bool = True, xmpps: bool = True,
                host: str = '0.0.0.0', port: int = None) -> None:
     app = web.Application()
@@ -75,5 +86,6 @@ def run_server(ipv4: bool = True, ipv6: bool = True, xmpps: bool = True,
     app['xmpps'] = xmpps
 
     app.add_routes([web.post('/test/{test}/', TestView)])
+    app.add_routes([web.get('/info/{what}/', InfoView)])
 
     web.run_app(app, host=host, port=port)
