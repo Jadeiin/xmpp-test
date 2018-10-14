@@ -13,9 +13,14 @@
 
 import asyncio
 import ssl
+import sys
 from typing import List
 
 from .types import TLS_VERSION
+
+
+# if the ssl module has the HAS_* constants - added in Python 3.7.
+_SSL_HAS_HAS_CONSTANTS = sys.version_info[:2] >= (3, 7)
 
 
 def get_supported_protocols(exclude: List[TLS_VERSION] = None) -> List[TLS_VERSION]:
@@ -29,16 +34,20 @@ def get_supported_protocols(exclude: List[TLS_VERSION] = None) -> List[TLS_VERSI
         if tls_version in exclude:
             continue
 
-        proto = getattr(ssl, 'PROTOCOL_%s' % tls_version.name, None)
-        if proto is not None:
-            supported.append(tls_version)
+        if _SSL_HAS_HAS_CONSTANTS:
+            # Python 3.7 no longer has all PROTOCOL_* constants
+            if getattr(ssl, 'HAS_%s' % tls_version.name, False):
+                supported.append(tls_version)
+        else:
+            proto = getattr(ssl, 'PROTOCOL_%s' % tls_version.name, None)
+            if proto is not None:
+                supported.append(tls_version)
 
     return supported
 
 
 async def get_ciphers(tls_version: TLS_VERSION) -> List[str]:
     ctx = TLS_VERSION.get_context(tls_version)
-#    return ['ECDHE-ECDSA-CAMELLIA256-SHA384']
     if hasattr(ctx, 'get_ciphers') and False:
         ciphers = [p['name'] for p in ctx.get_ciphers()]
     else:
