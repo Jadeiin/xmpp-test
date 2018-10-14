@@ -25,7 +25,6 @@ def get_supported_protocols(exclude: List[TLS_VERSION] = None) -> List[TLS_VERSI
         exclude = []
 
     supported = []
-#    return [TLS_VERSION.TLSv1_2]
     for tls_version in reversed(TLS_VERSION):
         if tls_version in exclude:
             continue

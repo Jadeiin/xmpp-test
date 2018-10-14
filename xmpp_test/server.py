@@ -26,7 +26,6 @@ from .tests.xmpp import TLSVersionTest
 
 class JsonApiView(web.View):
     async def post(self):
-        print(dir(self))
         request_data = await self.request.read()
         request_data = json.loads(request_data.decode('utf-8'))
 
