@@ -242,11 +242,11 @@ class XMPPTargetTest(Test):
         yield {}
 
     async def run(self, domain: str, typ: Check = Check.CLIENT,
-                  ipv4: bool = True, ipv6: bool = True, xmpps: bool = True) -> tuple:
+                  ipv4: bool = True, ipv6: bool = True, xmpps: bool = True, **kwargs) -> tuple:
 
         futures = []
         async for target in XMPPTarget.from_domain(domain, typ, ipv4, ipv6, xmpps):
-            async for test_kwargs in self.get_tests(domain, target):
+            async for test_kwargs in self.get_tests(domain, target, **kwargs):
                 futures.append(asyncio.ensure_future(self.target_test(target, **test_kwargs)))
         return await asyncio.gather(*futures)
 
