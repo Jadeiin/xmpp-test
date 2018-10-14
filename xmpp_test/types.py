@@ -39,10 +39,28 @@ class TLS_VERSION(Enum):
     TLSv1_3: int = 6
 
     def get_protocol_constant(tls_version: 'TLS_VERSION') -> ssl._SSLMethod:
-        return getattr(ssl, 'PROTOCOL_%s' % tls_version.name)
+        return getattr(ssl, 'OP_NO_%s' % tls_version.name)
 
     def get_context(tls_version: 'TLS_VERSION') -> ssl.SSLContext:
-        return ssl.SSLContext(TLS_VERSION.get_protocol_constant(tls_version))
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ctx.verify_mode = ssl.CERT_OPTIONAL
+
+        # TODO: without this flag, tests never return
+        ctx.check_hostname = False
+
+        # first, disable all protocol versions
+        constants = [
+            'OP_NO_SSLv2', 'OP_NO_SSLv3', 'OP_NO_TLSv1', 'OP_NO_TLSv1_1', 'OP_NO_TLSv1_2', 'OP_NO_TLSv1_3',
+        ]
+        for constant in constants:
+            if not hasattr(ssl, constant):
+                continue
+
+            ctx.options |= getattr(ssl, constant)
+
+        # Reenable the one version we want
+        ctx.options &= ~TLS_VERSION.get_protocol_constant(tls_version)
+        return ctx
 
 
 class STARTTLS(Enum):
