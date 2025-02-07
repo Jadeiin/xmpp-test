@@ -13,6 +13,7 @@
 
 import asyncio
 import socket
+import ipaddress
 
 from ..base import TestResult
 from ..base import XMPPTarget
@@ -30,12 +31,23 @@ class SocketTest(XMPPTargetTest):
         ip = str(target.ip)
         port = target.srv.port
 
-        s = socket.socket()
-        s.settimeout(2)
+        # Determine address family based on IP version
+        try:
+            addr = ipaddress.ip_address(ip)
+            family = socket.AF_INET6 if addr.version == 6 else socket.AF_INET
+        except ValueError:
+            return SocketTestResult(target, False)
+
+        # Create appropriate socket type
+        s = socket.socket(family=family, type=socket.SOCK_STREAM)
+        s.setblocking(False)  # Required for async operations
 
         loop = asyncio.get_event_loop()
         try:
-            await loop.sock_connect(s, (ip, port))
+            # Use async timeout handling
+            await asyncio.wait_for(loop.sock_connect(s, (ip, port)), timeout=2)
             return SocketTestResult(target, True)
-        except Exception as e:
+        except (OSError, asyncio.TimeoutError):
             return SocketTestResult(target, False)
+        finally:
+            s.close()  # Ensure socket is closed
